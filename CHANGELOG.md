@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [0.3.0] - Unreleased
+
+### Added
+- Implemented Phase 2: Rust Core Runtime Utilities (`src/layout.rs`).
+- Added strict `Node`, `AstRect`, and `FlexStyles` structs matching the Phase 1 AST schema.
+- Added `LayoutEngine` struct integrating `taffy` to map the AST layout attributes directly to a Taffy flexbox tree.
+- Implemented a strict validation pipeline inside `LayoutEngine::build_tree` that explicitly catches unsupported nodes or un-mappable CSS values and throws safe validation errors instead of crashing.
+
 ## [0.2.0] - Unreleased
 
 ### Added
