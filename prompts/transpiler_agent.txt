@@ -1,0 +1,23 @@
+Task: Implement the core multi-phase "Native-fy" transpilation pipeline as outlined in AGENTS.md.
+
+Go through the following engineering phases step-by-step:
+
+PHASE 1: STRUCTURAL AST EXTRACTION
+- Inside `scripts/web_scraper.ts`, implement a Playwright script that takes a URL, navigates to it, and extracts the layout topology.
+- It must ignore web-specific clutter and output a clean, normalized JSON Abstract Syntax Tree (AST) representing only essential structural boxes, layout coordinates, padding, margins, flexbox properties, text values, and bounding inputs.
+
+PHASE 2: THE RUST CORE RUNTIME UTILITIES
+- Inside `src/layout.rs`, implement the data structures that map the extracted structural JSON AST directly to Taffy flexbox layout nodes.
+- Ensure type safety so that any layout property outside of your supported Taffy flexbox subset throws a clear, predictable validation error.
+
+PHASE 3: THE COMPILER & SELF-HEALING ENGINE
+- Create an automated agent script inside your pipeline that handles the LLM generation loop.
+- This script must take the JSON AST, call the Gemini API using the template in `prompts/transpiler_agent.txt`, and output the generated layout code directly to the UI layer.
+- CRITICAL: Wrap this invocation in a shell execution loop that runs `cargo check` and `cargo test` inside your current cloud VM environment.
+- If `cargo` returns a non-zero exit status, capture the stdout/stderr compiler traces, format them into a remediation prompt, feed them back to the model, and recursively patch the source files until the project builds successfully.
+
+Deliverables:
+- Fully implemented scripts/web_scraper.ts
+- Fully implemented src/layout.rs with structural mapping
+- An automated self-correcting shell loop for cloud VM execution
+- A verified passing status from `cargo check`. Provide the plan and diffs for approval.
