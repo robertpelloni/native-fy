@@ -1,7 +1,7 @@
 # ROADMAP
 
 ## Phase 1: Structural AST Extraction
-Implement a Playwright script (`scripts/web_scraper.ts`) that navigates to URLs and extracts layout topology, ignoring web clutter. It outputs a normalized JSON Abstract Syntax Tree (AST) focusing on structural boxes, coordinates, padding, margins, flexbox properties, text values, and inputs.
+Implement a Playwright script (`scripts/web_scraper.js`) that navigates to URLs and extracts layout topology, ignoring web clutter. It outputs a normalized JSON Abstract Syntax Tree (AST) focusing on structural boxes, coordinates, padding, margins, flexbox properties, text values, and inputs.
 
 ## Phase 2: Rust Core Runtime Utilities
 Implement data structures in Rust (`src/layout.rs`) that directly map the extracted structural JSON AST to Taffy flexbox layout nodes, enforcing strict type safety to reject any properties outside the supported subset.

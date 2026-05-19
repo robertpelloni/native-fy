@@ -15,7 +15,7 @@ Before prompting Jules, initialize a clean repository with this structure so the
 ```text
 ├── AGENTS.md                  # This instructs Jules on the overall system architecture
 ├── scripts/
-│   └── web_scraper.ts         # Script for Phase 1 (Playwright structural extraction)
+│   └── web_scraper.js         # Script for Phase 1 (Playwright structural extraction)
 ├── src/
 │   ├── main.rs                # Rust Core / Windowing / wgpu setup
 │   ├── layout.rs              # Taffy layout integration
@@ -68,7 +68,7 @@ Task: Implement the core multi-phase "Native-fy" transpilation pipeline as outli
 Go through the following engineering phases step-by-step:
 
 PHASE 1: STRUCTURAL AST EXTRACTION
-- Inside `scripts/web_scraper.ts`, implement a Playwright script that takes a URL, navigates to it, and extracts the layout topology.
+- Inside `scripts/web_scraper.js`, implement a Playwright script that takes a URL, navigates to it, and extracts the layout topology.
 - It must ignore web-specific clutter and output a clean, normalized JSON Abstract Syntax Tree (AST) representing only essential structural boxes, layout coordinates, padding, margins, flexbox properties, text values, and bounding inputs.
 
 PHASE 2: THE RUST CORE RUNTIME UTILITIES
@@ -82,7 +82,7 @@ PHASE 3: THE COMPILER & SELF-HEALING ENGINE
 - If `cargo` returns a non-zero exit status, capture the stdout/stderr compiler traces, format them into a remediation prompt, feed them back to the model, and recursively patch the source files until the project builds successfully.
 
 Deliverables:
-- Fully implemented scripts/web_scraper.ts
+- Fully implemented scripts/web_scraper.js
 - Fully implemented src/layout.rs with structural mapping
 - An automated self-correcting shell loop for cloud VM execution
 - A verified passing status from `cargo check`. Provide the plan and diffs for approval.
