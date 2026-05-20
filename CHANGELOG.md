@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## [0.5.0] - Unreleased
+
+### Added
+- Implemented Phase 4 native shell: Added a `winit` (v0.30) event loop and application handler in `src/main.rs` to create the physical desktop window.
+
 ## [0.4.0] - Unreleased
 
 ### Added
