@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [0.4.0] - Unreleased
+
+### Added
+- Implemented Phase 3: The Compiler & Self-Healing Engine (`scripts/compiler_agent.js`).
+- Created a self-healing LLM loop that reads a JSON AST, prompts the Gemini API to write the corresponding Rust `taffy` code into `src/main.rs`, runs `cargo check`, and feeds compiler errors back to the LLM until the code successfully compiles.
+- Added `.env.example` placeholder file for securely storing `GEMINI_API_KEY`.
+- Updated `DEPLOY.md` to reflect new required node environments and API key prerequisites.
+
 ## [0.3.0] - Unreleased
 
 ### Added
