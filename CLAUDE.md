@@ -1,0 +1,1 @@
+See `AGENTS.md` for project architecture and constraints. Model specific instructions can be added here.

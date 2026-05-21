@@ -1,0 +1,9 @@
+[package]
+name = "app"
+version = "0.5.0"
+edition = "2024"
+
+[dependencies]
+taffy = "0.10.1"
+wgpu = "29.0.3"
+winit = "0.30.13"
