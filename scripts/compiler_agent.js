@@ -51,15 +51,16 @@ async function main() {
 CRITICAL ARCHITECTURAL CHANGE:
 The project now uses a wgpu-based rendering shell in \`src/main.rs\`.
 Your task is NOT to overwrite \`src/main.rs\`.
-Instead, you must output a Rust function named \`generate_ui_tree\` that takes a \`&mut LayoutEngine\` and returns a \`NodeId\`.
-This function will be used by \`src/main.rs\` to build the Taffy layout tree.
+Instead, you must output ONLY the body of a Rust function that will be placed inside \`generate_ui_tree\`.
+The function context is: \`pub fn generate_ui_tree(engine: &mut LayoutEngine) -> NodeId { ... }\`.
+You have access to \`engine\`, \`Node\`, \`AstRect\`, \`FlexStyles\`, and \`HashMap\`.
 
 Here is the input AST to compile:
 \`\`\`json
 ${astJson}
 \`\`\`
 
-Please output ONLY the implementation of \`generate_ui_tree\` and any necessary helper imports for \`src/ui_gen.rs\`.
+Please output ONLY the implementation code (the lines that go inside the curly braces).
 Wrap the code in a \`\`\`rust block.`;
 
     let iteration = 0;
@@ -98,13 +99,13 @@ ${rustCode}
                 console.error("Compilation Failed.");
 
                 // Format remediation prompt
-                currentPrompt = `The previous Rust code you provided for \`src/ui_gen.rs\` failed to compile. Here is the compiler output:
+                currentPrompt = `The previous Rust code you provided for the body of \`generate_ui_tree\` failed to compile. Here is the compiler output:
 
 \`\`\`
 ${compilerError}
 \`\`\`
 
-Please fix the errors and provide the corrected Rust code (the body of the function or the whole function) wrapped in \`\`\`rust block.`;
+Please fix the errors and provide the corrected Rust code (ONLY the body of the function) wrapped in \`\`\`rust block.`;
             }
 
         } catch (error) {

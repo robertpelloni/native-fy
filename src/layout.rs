@@ -189,6 +189,14 @@ impl LayoutEngine {
         self.taffy.compute_layout(root_id, Size::MAX_CONTENT)
     }
 
+    pub fn layout(&self, id: NodeId) -> Option<&Layout> {
+        self.taffy.layout(id).ok()
+    }
+
+    pub fn children(&self, id: NodeId) -> Option<Vec<NodeId>> {
+        self.taffy.children(id).ok()
+    }
+
     pub fn print_layout(&self, id: NodeId, prefix: &str) {
         let layout = self.taffy.layout(id).unwrap();
         println!("{prefix} SIZE: {}x{}, POS: {},{}", layout.size.width, layout.size.height, layout.location.x, layout.location.y);

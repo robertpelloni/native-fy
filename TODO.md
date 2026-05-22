@@ -11,7 +11,7 @@
 6. [DONE] Initialize `wgpu` context (Instance, Adapter, Device, Queue, Surface) in `src/main.rs`.
 7. [DONE] Implement `WindowEvent::Resized` to handle surface reconfiguration.
 8. [DONE] Implement basic `WindowEvent::RedrawRequested` to clear the screen with a solid color.
-9. [ ] Create a "Box" renderer to draw rectangles based on Taffy layout coordinates.
+9. [DONE] Create a "Box" renderer to draw rectangles based on Taffy layout coordinates using instanced drawing.
 10. [ ] Implement a "Text" renderer using `cosmic-text` or similar for font shaping.
 
 ## Scripting Runtime (QuickJS)

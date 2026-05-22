@@ -75,6 +75,7 @@ dependencies = [
 name = "app"
 version = "0.5.0"
 dependencies = [
+ "bytemuck",
  "pollster",
  "taffy",
  "wgpu",

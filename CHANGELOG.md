@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [0.7.0] - Unreleased
+
+### Added
+- Implemented a quad renderer using `wgpu` and instanced drawing.
+- Created a WGSL shader for efficient rendering of UI layout nodes.
+- Integrated `taffy` layout results directly into the `wgpu` render pass.
+- Added `bytemuck` dependency for safe memory mapping between Rust and the GPU.
+- Implemented a coordinate transformation system to map Taffy screen-space pixels to wgpu Normalized Device Coordinates (NDC).
+
 ## [0.6.0] - Unreleased
 
 ### Added
