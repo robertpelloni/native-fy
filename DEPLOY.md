@@ -1,28 +1,28 @@
-# DEPLOY
+# DEPLOY: Deployment & Setup
 
 ## Prerequisites
-
+- Rust (latest stable)
+- Cargo
 - Node.js (v18+ recommended for native fetch)
-- Rust toolchain (`cargo`)
 - Playwright system dependencies (`npx playwright install`)
+- Vulkan/Metal/DX12 compatible hardware (or software rasterizer for headless)
 
 ## Setup
-
-1. **Install Node Dependencies:**
+1. **Clone & Install Node Dependencies:**
    ```bash
+   git clone <repo_url>
+   cd native-fy
    npm install
    npx playwright install
    ```
 
 2. **Environment Variables:**
-   Copy the example environment file:
+   Copy the example environment file and fill in your `GEMINI_API_KEY`:
    ```bash
    cp .env.example .env
    ```
-   Open `.env` and fill in your `GEMINI_API_KEY`. This is strictly required for Phase 3 (Compiler & Self-Healing Engine) to interact with the LLM.
 
 ## Usage
-
 1. **Extract AST:**
    ```bash
    node scripts/web_scraper.js "https://example.com" > ui_ast.json
@@ -33,3 +33,20 @@
    node scripts/compiler_agent.js ui_ast.json
    ```
    *This will recursively prompt the LLM and run `cargo check` until the output successfully builds.*
+
+## Building & Running
+- **Debug:** `cargo run`
+- **Release:** `cargo build --release` (binary at `target/release/app`)
+
+## Headless Execution
+On servers without a GPU/Display:
+1. Use `XVFB` or similar if windowing is required.
+2. Monitor `app.log` for output as no window will be visible.
+3. Rendering may fail unless a software Vulkan driver (like `lavapipe`) is present.
+
+## Monitoring Stability
+To run the application with live performance monitoring:
+```bash
+node scripts/monitor.js
+```
+*This will log system resources and engine metrics to `stability.log`.*

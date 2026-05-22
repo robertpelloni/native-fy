@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [0.13.0] - Unreleased
+
+### Added
+- Implemented robust system logging and error recovery infrastructure.
+- Added custom panic hook to redirect application crashes to `app.log` with timestamps.
+- Created `scripts/monitor.js` for automated stability and performance monitoring in live environments.
+- Updated `DEPLOY.md` with release build and production monitoring instructions.
+- Integrated `chrono` for advanced timestamping in logging.
+- Refactored `RenderState` to use structured error propagation (`Result`) for better stability.
+
 ## [0.12.0] - Unreleased
 
 ### Added

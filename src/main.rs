@@ -5,6 +5,8 @@ mod runtime;
 use std::sync::Arc;
 use std::time::Instant;
 use std::sync::mpsc::{self, Receiver, Sender};
+use std::fs::OpenOptions;
+use std::io::Write;
 use layout::{LayoutEngine, Node, AstRect, FlexStyles};
 use runtime::{JsRuntime, UiCommand};
 use winit::{
@@ -20,6 +22,18 @@ use glyphon::{
 };
 
 const MAX_NODES: usize = 1024;
+const LOG_FILE: &str = "app.log";
+
+fn log_error(msg: &str) {
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(LOG_FILE)
+        .unwrap();
+    let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+    writeln!(file, "[{}] ERROR: {}", timestamp, msg).unwrap();
+    eprintln!("{}", msg);
+}
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -94,11 +108,11 @@ struct RenderState {
     text_renderer: TextRenderer,
 
     // Texture
-    diffuse_texture: wgpu::Texture,
+    _diffuse_texture: wgpu::Texture,
 }
 
 impl RenderState {
-    async fn new(window: Arc<Window>) -> Self {
+    async fn new(window: Arc<Window>) -> Result<Self, String> {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -108,7 +122,8 @@ impl RenderState {
             flags: wgpu::InstanceFlags::default(),
         });
 
-        let surface = instance.create_surface(window.clone()).unwrap();
+        let surface = instance.create_surface(window.clone())
+            .map_err(|e| format!("Failed to create surface: {:?}", e))?;
 
         let adapter = instance.request_adapter(
             &wgpu::RequestAdapterOptions {
@@ -116,7 +131,7 @@ impl RenderState {
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             },
-        ).await.unwrap();
+        ).await.ok_or("Failed to request adapter")?;
 
         let (device, queue) = adapter.request_device(
             &wgpu::DeviceDescriptor {
@@ -126,7 +141,7 @@ impl RenderState {
                 memory_hints: wgpu::MemoryHints::default(),
             },
             None,
-        ).await.unwrap();
+        ).await.map_err(|e| format!("Failed to request device: {:?}", e))?;
 
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps.formats.iter()
@@ -150,7 +165,7 @@ impl RenderState {
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
         // Texture creation (placeholder)
-        let diffuse_texture = device.create_texture(&wgpu::TextureDescriptor {
+        let _diffuse_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Diffuse Texture"),
             size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
             mip_level_count: 1,
@@ -161,7 +176,7 @@ impl RenderState {
             view_formats: &[],
         });
 
-        let diffuse_view = diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let diffuse_view = _diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default());
         let diffuse_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
@@ -324,7 +339,7 @@ impl RenderState {
         let mut text_atlas = TextAtlas::new(&device, &queue, &cache, surface_format);
         let text_renderer = TextRenderer::new(&mut text_atlas, &device, wgpu::MultisampleState::default(), None);
 
-        Self {
+        Ok(Self {
             surface,
             device,
             queue,
@@ -344,8 +359,8 @@ impl RenderState {
             text_atlas,
             text_renderer,
 
-            diffuse_texture,
-        }
+            _diffuse_texture,
+        })
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -358,17 +373,10 @@ impl RenderState {
         }
     }
 
-    fn render(&mut self, engine: &LayoutEngine, root_id: taffy::prelude::NodeId) -> Result<(), wgpu::SurfaceStatus> {
+    fn render(&mut self, engine: &LayoutEngine, root_id: taffy::prelude::NodeId) -> Result<(), wgpu::SurfaceError> {
         let render_start = Instant::now();
 
-        let output = self.surface.get_current_texture();
-        let output = match output {
-            Ok(texture) => texture,
-            Err(wgpu::SurfaceError::Timeout) => return Err(wgpu::SurfaceStatus::Timeout),
-            Err(wgpu::SurfaceError::Outdated) => return Err(wgpu::SurfaceStatus::Outdated),
-            Err(wgpu::SurfaceError::Lost) => return Err(wgpu::SurfaceStatus::Lost),
-            Err(wgpu::SurfaceError::OutOfMemory) => return Err(wgpu::SurfaceStatus::Lost), // Simplified
-        };
+        let output = self.surface.get_current_texture()?;
 
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -472,7 +480,8 @@ impl RenderState {
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
-        let _render_duration = render_start.elapsed();
+        let render_duration = render_start.elapsed();
+        println!("Performance: Frame rendered in {:?}", render_duration);
 
         Ok(())
     }
@@ -548,8 +557,14 @@ impl ApplicationHandler for NativefyApp {
             let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
             self.window = Some(window.clone());
 
-            let render_state = pollster::block_on(RenderState::new(window));
-            self.render_state = Some(render_state);
+            let render_state_res = pollster::block_on(RenderState::new(window));
+            match render_state_res {
+                Ok(state) => self.render_state = Some(state),
+                Err(e) => {
+                    log_error(&format!("Failed to initialize render state: {}", e));
+                    return;
+                }
+            }
 
             let mut engine = LayoutEngine::new();
 
@@ -630,8 +645,8 @@ impl ApplicationHandler for NativefyApp {
                 if let (Some(state), Some(engine), Some(root_id)) = (self.render_state.as_mut(), self.layout_engine.as_ref(), self.root_id) {
                     match state.render(engine, root_id) {
                         Ok(_) => {}
-                        Err(wgpu::SurfaceStatus::Lost) => state.resize(state.size),
-                        Err(e) => eprintln!("{:?}", e),
+                        Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => state.resize(state.size),
+                        Err(e) => log_error(&format!("Render error: {:?}", e)),
                     }
                 }
                 if let Some(window) = self.window.as_ref() {
@@ -644,6 +659,18 @@ impl ApplicationHandler for NativefyApp {
 }
 
 fn main() {
+    std::panic::set_hook(Box::new(|panic_info| {
+        let msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+            s.to_string()
+        } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
+            s.clone()
+        } else {
+            "Unknown panic".to_string()
+        };
+        let location = panic_info.location().map(|l| format!(" at {}:{}", l.file(), l.line())).unwrap_or_default();
+        log_error(&format!("PANIC: {}{}", msg, location));
+    }));
+
     println!("Initializing Native-fy Windowing Environment...");
 
     // Initialize winit event loop

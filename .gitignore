@@ -1,3 +1,5 @@
 /target
 node_modules/
 .jules/
+*.log
+app_output.txt

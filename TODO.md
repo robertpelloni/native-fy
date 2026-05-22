@@ -21,12 +21,14 @@
 14. [DONE] Implement dynamic styling bridge for JS-to-Native property mapping.
 15. [ ] Implement a `fetch` polyfill for the QuickJS environment.
 
-## Performance & Optimization
+## Performance & Stability
 16. [DONE] Instrument core engine for frame-time and layout-time measurement.
 17. [DONE] Conduct benchmark of JS-to-Native bridge (1000 nodes in < 3ms).
-18. [ ] Implement dynamic storage buffer resizing for nodes.
+18. [DONE] Implement robust panic handling and disk-based error logging.
+19. [DONE] Create automated stability monitoring script for live deployment.
+20. [ ] Implement dynamic storage buffer resizing for nodes.
 
 ## Polish & Tooling
-19. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
-20. [DONE] Add `nativefy` convenience script to `package.json`.
-21. [ ] Add automated UI integration tests using Playwright against the native window (via screenshot comparison).
+21. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
+22. [DONE] Add `nativefy` convenience script to `package.json`.
+23. [ ] Add automated UI integration tests using Playwright against the native window (via screenshot comparison).

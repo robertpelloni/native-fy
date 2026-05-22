@@ -1,11 +1,17 @@
-# IDEAS
+# IDEAS: Native-fy Expansion & Pivots
 
 ## Feature Expansions
-- **Hot Reloading:** Implement a file watcher that triggers the `compiler_agent.js` and reloads the native window without a full restart.
-- **SDF UI Components:** Use Signed Distance Fields (SDFs) for rendering perfectly anti-aliased rounded corners, shadows, and text at any scale.
-- **WebAssembly Support:** Allow QuickJS to call into WASM modules for high-performance JS-side logic.
-- **Vulkan/Metal Direct Backends:** While `wgpu` handles this, providing direct backend optimizations for specific OSs could improve latency.
+- **Hot Reloading:** Inject updated QuickJS scripts without restarting the Rust process.
+- **Vector Graphics:** Integrate `vello` or `resvg` for SVG support and complex paths.
+- **Component Library:** Build a set of standard UI components (Buttons, Inputs, Modals) in JS.
+- **Accessibility:** Implement a native accessibility tree bridge for screen readers.
 
-## Architectural Pivots
-- **Hybrid Rendering:** Explore using `piet-gpu` or `vello` for 2D vector graphics if `wgpu` primitive drawing becomes too complex.
-- **Unified AST:** Standardize the AST further so it can be exported to other native engines (e.g., Swift UI or Jetpack Compose) as a secondary target.
+## Structural Refactoring
+- **WASM Backend:** Port the core engine to WASM to run in the browser as a "meta-engine" (paradoxical but interesting for demos).
+- **Python Bindings:** Allow using Python instead of QuickJS for logic.
+- **Zig Port:** Port the rendering core to Zig for even lower binary size and faster build times.
+
+## Pivots
+- **Game Engine Overlay:** Position Native-fy as a lightweight UI overlay for game engines (Godot/Bevy).
+- **Embedded OS UI:** Target bare-metal or ultra-light Linux for smart appliances.
+- **Secure Browser:** Build a specialized, limited-capability browser that only renders trusted AST layouts for high-security environments.

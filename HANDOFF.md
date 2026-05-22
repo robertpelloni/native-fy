@@ -1,22 +1,21 @@
-# HANDOFF
+# HANDOFF: Session Summary (v0.13.0)
 
-## Session Summary
-This session significantly enhanced the integration between the QuickJS runtime and the native rendering engine. A dynamic styling bridge was implemented to pass JS style objects to Rust, and the main application loop was updated to process UI mutation commands (like node creation) asynchronously. Additionally, support for an "Image" node type was added to the layout engine and the `wgpu` rendering pipeline, including texture sampling in the WGSL shader.
+## Summary of Work
+- **Monitoring & Logging:** Added timestamped logging to `app.log` and a custom panic hook in `main.rs`.
+- **Instrumentation:** Implemented frame-rate and layout timing logs.
+- **Stability Scripts:** Created `scripts/monitor.js` to track application health.
+- **Documentation:** Synchronized all project documentation (`VISION.md`, `MEMORY.md`, `DEPLOY.md`, `IDEAS.md`, `ROADMAP.md`, `TODO.md`, `CHANGELOG.md`) to version 0.13.0.
 
-## Key Modifications
-- **Dynamic Styling:** Updated the JS-to-Native bridge to iterate over and parse CSS-like style objects from JavaScript.
-- **Node Mutation:** Implemented asynchronous node creation and child attachment in `main.rs` using an `mpsc` command queue.
-- **Image Pipeline:** Added "Image" node support, integrated the `image` crate, and updated the `wgpu` pass/shader to handle textured primitives.
-- **Sanitization:** Followed the EXECUTIVE PROTOCOL for deep repository synchronization and branch reconciliation.
-- **Documentation:** Incremented version to 0.12.0 and updated `ROADMAP.md`, `TODO.md`, `CHANGELOG.md`, and `PERFORMANCE.md`.
+## Structural Shifts
+- Shifted from manual debugging to automated monitoring via `app.log`.
+- Formalized the `VERSION.md` source of truth.
 
-## State of the Repo
-- **Version:** 0.12.0
-- **Build Status:** Passing (`cargo check`, `cargo build`, and `cargo test` successful).
-- **Architecture:** Robust, event-driven engine with a high-performance scripting bridge and multi-primitive rendering support.
+## Unobvious Findings
+- `winit` v0.30's `ApplicationHandler` is strictly required for modern event loop management.
+- Headless panics are common when windowing is requested without a display server; the new panic hook captures these gracefully.
 
-## Next Actions
-- **Texture Loading:** Implement actual image file decoding and uploading using the `image` crate.
-- **Fetch Polyfill:** Add a `fetch` implementation to QuickJS for network requests.
-- **Dynamic Styling Fix:** Refine the style mapping to handle all Taffy-supported Flexbox properties beyond the current stubs.
-- **Optimization:** Implement dynamically resizing storage buffers for UI nodes.
+## For the Successor
+- The next major milestone is the **Network & Asset Phase**.
+- Focus on the `fetch` polyfill in `src/runtime.rs`.
+- The `UiCommand` enum needs an `UpdateImage` variant once the image loader is ready.
+- Check `PERFORMANCE.md` for current bottleneck analysis.
