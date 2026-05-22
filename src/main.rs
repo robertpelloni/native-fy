@@ -3,8 +3,10 @@ mod ui_gen;
 mod runtime;
 
 use std::sync::Arc;
+use std::time::Instant;
+use std::sync::mpsc::{self, Receiver, Sender};
 use layout::LayoutEngine;
-use runtime::JsRuntime;
+use runtime::{JsRuntime, UiCommand};
 use winit::{
     application::ApplicationHandler,
     event::{WindowEvent, ElementState, MouseButton},
@@ -303,6 +305,8 @@ impl RenderState {
     }
 
     fn render(&mut self, engine: &LayoutEngine, root_id: taffy::prelude::NodeId) -> Result<(), wgpu::SurfaceStatus> {
+        let render_start = Instant::now();
+
         let output = self.surface.get_current_texture();
         let output = match output {
             Ok(texture) => texture,
@@ -414,6 +418,9 @@ impl RenderState {
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
+        let render_duration = render_start.elapsed();
+        // println!("Performance: Frame rendered in {:?}", render_duration);
+
         Ok(())
     }
 
@@ -449,7 +456,6 @@ impl RenderState {
     }
 }
 
-#[derive(Default)]
 struct NativefyApp {
     window: Option<Arc<Window>>,
     render_state: Option<RenderState>,
@@ -457,6 +463,24 @@ struct NativefyApp {
     root_id: Option<taffy::prelude::NodeId>,
     js_runtime: Option<JsRuntime>,
     mouse_pos: [f32; 2],
+    ui_rx: Receiver<UiCommand>,
+    ui_tx: Sender<UiCommand>,
+}
+
+impl Default for NativefyApp {
+    fn default() -> Self {
+        let (ui_tx, ui_rx) = mpsc::channel();
+        Self {
+            window: None,
+            render_state: None,
+            layout_engine: None,
+            root_id: None,
+            js_runtime: None,
+            mouse_pos: [0.0; 2],
+            ui_rx,
+            ui_tx,
+        }
+    }
 }
 
 impl ApplicationHandler for NativefyApp {
@@ -473,14 +497,18 @@ impl ApplicationHandler for NativefyApp {
             self.render_state = Some(render_state);
 
             let mut engine = LayoutEngine::new();
+
+            let layout_start = Instant::now();
             let root_id = ui_gen::generate_ui_tree(&mut engine);
             let _ = engine.compute(root_id);
+            let layout_duration = layout_start.elapsed();
+            println!("Performance: Initial layout computed in {:?}", layout_duration);
 
             self.layout_engine = Some(engine);
             self.root_id = Some(root_id);
 
             // Initialize QuickJS
-            let runtime = JsRuntime::new();
+            let runtime = JsRuntime::new(self.ui_tx.clone());
             let bridge_code = include_str!("runtime.js");
             runtime.eval(bridge_code);
             self.js_runtime = Some(runtime);
@@ -508,6 +536,16 @@ impl ApplicationHandler for NativefyApp {
                 }
             }
             WindowEvent::RedrawRequested => {
+                // Process UI commands
+                while let Ok(cmd) = self.ui_rx.try_recv() {
+                    match cmd {
+                        UiCommand::CreateNode { node_type, styles, text } => {
+                            println!("Native: Handling CreateNode for {}", node_type);
+                            // Full implementation would add to LayoutEngine and recompute
+                        }
+                    }
+                }
+
                 if let (Some(state), Some(engine), Some(root_id)) = (self.render_state.as_mut(), self.layout_engine.as_ref(), self.root_id) {
                     match state.render(engine, root_id) {
                         Ok(_) => {}

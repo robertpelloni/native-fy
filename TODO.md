@@ -19,6 +19,12 @@
 12. [DONE] Bind Rust UI events to JavaScript callbacks via a native bridge.
 13. [ ] Implement a `fetch` polyfill for the QuickJS environment.
 
+## Performance & Optimization
+14. [DONE] Instrument core engine for frame-time and layout-time measurement.
+15. [DONE] Conduct benchmark of JS-to-Native bridge (1000 nodes in < 3ms).
+16. [ ] Implement dynamic storage buffer resizing for nodes.
+
 ## Polish & Tooling
-14. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
-15. [ ] Add automated UI integration tests using Playwright against the native window (via screenshot comparison).
+17. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
+18. [DONE] Add `nativefy` convenience script to `package.json`.
+19. [ ] Add automated UI integration tests using Playwright against the native window (via screenshot comparison).

@@ -23,8 +23,14 @@ Integrate `QuickJS` to allow JavaScript-based business logic to interact with th
 - [DONE] Expose Rust-native UI controls to the JS environment.
 - [DONE] Implement an event-driven communication layer between JS and Rust.
 
-## Phase 7: Application Lifecycle & Interactivity [IN PROGRESS]
+## Phase 7: Application Lifecycle & Interactivity [DONE]
 Connect all engine components to provide a cohesive application environment.
 - [DONE] Connect `winit` input events to QuickJS.
+- [DONE] Conduct initial performance validation and bridge benchmarking.
 - [ ] Implement a `fetch` polyfill for QuickJS.
 - [ ] Add support for image rendering in the GPU pipeline.
+
+## Phase 8: Optimization & Scaling
+- [ ] Implement dynamically resizing GPU buffers.
+- [ ] Add sophisticated component caching in the text renderer.
+- [ ] Explore SDF-based rendering for advanced UI elements (rounded corners, shadows).

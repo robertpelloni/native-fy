@@ -15,7 +15,6 @@ const NativeUI = {
     }
 };
 
-// Internal global called from Rust
 globalThis._native_on_event = (type, data) => {
     if (_eventListeners[type]) {
         _eventListeners[type].forEach(callback => callback(data));
@@ -23,3 +22,15 @@ globalThis._native_on_event = (type, data) => {
 };
 
 console.log("QuickJS: NativeUI bridge initialized.");
+
+// Performance test logic
+const NODE_COUNTS = [100, 500, 1000];
+
+NODE_COUNTS.forEach(count => {
+    const start = Date.now();
+    for (let i = 0; i < count; i++) {
+        NativeUI.createNode("Box", { padding: "1px" });
+    }
+    const end = Date.now();
+    console.log(`JS Performance: Created ${count} nodes in ${end - start}ms`);
+});
