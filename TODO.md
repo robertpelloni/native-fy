@@ -26,9 +26,10 @@
 17. [DONE] Conduct benchmark of JS-to-Native bridge (1000 nodes in < 3ms).
 18. [DONE] Implement robust panic handling and disk-based error logging.
 19. [DONE] Create automated stability monitoring script for live deployment.
-20. [ ] Implement dynamic storage buffer resizing for nodes.
+20. [DONE] Integrate Autonomous Execution Protocol into the core pipeline.
+21. [ ] Implement dynamic storage buffer resizing for nodes.
 
 ## Polish & Tooling
-21. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
-22. [DONE] Add `nativefy` convenience script to `package.json`.
-23. [ ] Add automated UI integration tests using Playwright against the native window (via screenshot comparison).
+22. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
+23. [DONE] Add `nativefy` convenience script to `package.json`.
+24. [ ] Add automated UI integration tests using Playwright against the native window (via screenshot comparison).
