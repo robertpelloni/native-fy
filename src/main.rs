@@ -10,6 +10,10 @@ use winit::{
     window::{Window, WindowId},
 };
 use wgpu::util::DeviceExt;
+use glyphon::{
+    FontSystem, SwashCache, TextAtlas, TextRenderer, TextArea, TextBounds,
+    Resolution, Metrics, Family, Shaping,
+};
 
 const MAX_NODES: usize = 1024;
 
@@ -75,6 +79,13 @@ struct RenderState {
     globals_buffer: wgpu::Buffer,
     node_buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
+
+    // Text rendering components
+    font_system: FontSystem,
+    swash_cache: SwashCache,
+    viewport: glyphon::Viewport,
+    text_atlas: TextAtlas,
+    text_renderer: TextRenderer,
 }
 
 impl RenderState {
@@ -83,10 +94,9 @@ impl RenderState {
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
+            dx12_shader_compiler: Default::default(),
+            gles_minor_version: Default::default(),
             flags: wgpu::InstanceFlags::default(),
-            backend_options: wgpu::BackendOptions::default(),
-            memory_budget_thresholds: wgpu::MemoryBudgetThresholds::default(),
-            display: None,
         });
 
         let surface = instance.create_surface(window.clone()).unwrap();
@@ -105,9 +115,8 @@ impl RenderState {
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::default(),
                 memory_hints: wgpu::MemoryHints::default(),
-                experimental_features: wgpu::ExperimentalFeatures::default(),
-                trace: wgpu::Trace::Off,
             },
+            None,
         ).await.unwrap();
 
         let surface_caps = surface.get_capabilities(&adapter);
@@ -190,8 +199,8 @@ impl RenderState {
 
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[Some(&bind_group_layout)],
-            immediate_size: 0,
+            bind_group_layouts: &[&bind_group_layout],
+            push_constant_ranges: &[],
         });
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -228,7 +237,7 @@ impl RenderState {
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
-            multiview_mask: None,
+            multiview: None,
             cache: None,
         });
 
@@ -250,6 +259,15 @@ impl RenderState {
 
         let num_indices = INDICES.len() as u32;
 
+        // Initialize glyphon components
+        let font_system = FontSystem::new();
+        let swash_cache = SwashCache::new();
+        let cache = glyphon::Cache::new(&device);
+        let mut viewport = glyphon::Viewport::new(&device, &cache);
+        viewport.update(&queue, Resolution { width: size.width, height: size.height });
+        let mut text_atlas = TextAtlas::new(&device, &queue, &cache, surface_format);
+        let text_renderer = TextRenderer::new(&mut text_atlas, &device, wgpu::MultisampleState::default(), None);
+
         Self {
             surface,
             device,
@@ -263,6 +281,12 @@ impl RenderState {
             globals_buffer,
             node_buffer,
             bind_group,
+
+            font_system,
+            swash_cache,
+            viewport,
+            text_atlas,
+            text_renderer,
         }
     }
 
@@ -272,19 +296,18 @@ impl RenderState {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
+            self.viewport.update(&self.queue, Resolution { width: new_size.width, height: new_size.height });
         }
     }
 
     fn render(&mut self, engine: &LayoutEngine, root_id: taffy::prelude::NodeId) -> Result<(), wgpu::SurfaceStatus> {
         let output = self.surface.get_current_texture();
         let output = match output {
-            wgpu::CurrentSurfaceTexture::Success(texture) => texture,
-            wgpu::CurrentSurfaceTexture::Suboptimal(texture) => texture,
-            wgpu::CurrentSurfaceTexture::Timeout => return Err(wgpu::SurfaceStatus::Timeout),
-            wgpu::CurrentSurfaceTexture::Outdated => return Err(wgpu::SurfaceStatus::Outdated),
-            wgpu::CurrentSurfaceTexture::Lost => return Err(wgpu::SurfaceStatus::Lost),
-            wgpu::CurrentSurfaceTexture::Occluded => return Ok(()),
-            wgpu::CurrentSurfaceTexture::Validation => return Ok(()),
+            Ok(texture) => texture,
+            Err(wgpu::SurfaceError::Timeout) => return Err(wgpu::SurfaceStatus::Timeout),
+            Err(wgpu::SurfaceError::Outdated) => return Err(wgpu::SurfaceStatus::Outdated),
+            Err(wgpu::SurfaceError::Lost) => return Err(wgpu::SurfaceStatus::Lost),
+            Err(wgpu::SurfaceError::OutOfMemory) => return Err(wgpu::SurfaceStatus::Lost), // Simplified
         };
 
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
@@ -301,7 +324,8 @@ impl RenderState {
 
         // Collect node data
         let mut nodes = Vec::new();
-        self.collect_nodes(engine, root_id, 0.0, 0.0, &mut nodes);
+        let mut text_data = Vec::new();
+        self.collect_nodes(engine, root_id, 0.0, 0.0, &mut nodes, &mut text_data);
 
         if !nodes.is_empty() {
             let data_to_write = if nodes.len() > MAX_NODES {
@@ -311,6 +335,45 @@ impl RenderState {
             };
             self.queue.write_buffer(&self.node_buffer, 0, bytemuck::cast_slice(data_to_write));
         }
+
+        // Prepare text areas
+        let mut text_areas = Vec::new();
+        let mut buffers = Vec::new(); // Keep buffers alive
+        for (text, _x, _y, width, height) in &text_data {
+            let mut buffer = glyphon::Buffer::new(&mut self.font_system, Metrics::new(16.0, 20.0));
+            buffer.set_size(&mut self.font_system, Some(*width), Some(*height));
+            buffer.set_text(&mut self.font_system, text, glyphon::Attrs::new().family(Family::SansSerif), Shaping::Advanced);
+            buffer.shape_until_scroll(&mut self.font_system, false);
+            buffers.push(buffer);
+        }
+
+        for (i, (_, x, y, _, _)) in text_data.iter().enumerate() {
+            text_areas.push(TextArea {
+                buffer: &buffers[i],
+                left: *x,
+                top: *y,
+                scale: 1.0,
+                bounds: TextBounds {
+                    left: 0,
+                    top: 0,
+                    right: self.size.width as i32,
+                    bottom: self.size.height as i32,
+                },
+                default_color: glyphon::Color::rgb(255, 255, 255),
+                custom_glyphs: &[],
+            });
+        }
+
+        // Prepare text rendering
+        self.text_renderer.prepare(
+            &self.device,
+            &self.queue,
+            &mut self.font_system,
+            &mut self.text_atlas,
+            &self.viewport,
+            text_areas,
+            &mut self.swash_cache,
+        ).unwrap();
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -327,12 +390,10 @@ impl RenderState {
                         }),
                         store: wgpu::StoreOp::Store,
                     },
-                    depth_slice: None,
                 })],
                 depth_stencil_attachment: None,
                 occlusion_query_set: None,
                 timestamp_writes: None,
-                multiview_mask: None,
             });
 
             if !nodes.is_empty() {
@@ -343,6 +404,9 @@ impl RenderState {
                 render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
                 render_pass.draw_indexed(0..self.num_indices, 0, 0..instance_count);
             }
+
+            // Draw text
+            self.text_renderer.render(&self.text_atlas, &self.viewport, &mut render_pass).unwrap();
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -358,6 +422,7 @@ impl RenderState {
         parent_x: f32,
         parent_y: f32,
         nodes: &mut Vec<NodeData>,
+        text_data: &mut Vec<(String, f32, f32, f32, f32)>,
     ) {
         if let Some(layout) = engine.layout(id) {
             let x = parent_x + layout.location.x;
@@ -369,9 +434,13 @@ impl RenderState {
                 color: [0.5, 0.6, 0.7, 1.0], // Placeholder color
             });
 
+            if let Some(text) = engine.get_text(id) {
+                text_data.push((text.clone(), x, y, layout.size.width, layout.size.height));
+            }
+
             if let Some(children) = engine.children(id) {
                 for child_id in children {
-                    self.collect_nodes(engine, child_id, x, y, nodes);
+                    self.collect_nodes(engine, child_id, x, y, nodes, text_data);
                 }
             }
         }

@@ -38,12 +38,14 @@ pub enum ValidationError {
 
 pub struct LayoutEngine {
     taffy: TaffyTree,
+    node_metadata: HashMap<NodeId, String>, // NodeId -> Text content
 }
 
 impl LayoutEngine {
     pub fn new() -> Self {
         Self {
             taffy: TaffyTree::new(),
+            node_metadata: HashMap::new(),
         }
     }
 
@@ -182,6 +184,10 @@ impl LayoutEngine {
         let node_id = self.taffy.new_leaf(style).unwrap();
         self.taffy.set_children(node_id, &child_ids).unwrap();
 
+        if let Some(text) = &node.text {
+            self.node_metadata.insert(node_id, text.clone());
+        }
+
         Ok(node_id)
     }
 
@@ -195,6 +201,10 @@ impl LayoutEngine {
 
     pub fn children(&self, id: NodeId) -> Option<Vec<NodeId>> {
         self.taffy.children(id).ok()
+    }
+
+    pub fn get_text(&self, id: NodeId) -> Option<&String> {
+        self.node_metadata.get(&id)
     }
 
     pub fn print_layout(&self, id: NodeId, prefix: &str) {

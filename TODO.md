@@ -12,11 +12,11 @@
 7. [DONE] Implement `WindowEvent::Resized` to handle surface reconfiguration.
 8. [DONE] Implement basic `WindowEvent::RedrawRequested` to clear the screen with a solid color.
 9. [DONE] Create a "Box" renderer to draw rectangles based on Taffy layout coordinates using instanced drawing.
-10. [ ] Implement a "Text" renderer using `cosmic-text` or similar for font shaping.
+10. [DONE] Implement a "Text" renderer using `glyphon` for high-performance font rendering.
 
 ## Scripting Runtime (QuickJS)
-11. [ ] Scaffold `QuickJS` integration in `src/runtime.js`.
-12. [ ] Bind Rust UI events to JavaScript callbacks.
+11. [DONE] Scaffold `QuickJS` integration in `src/runtime.rs` and `src/runtime.js`.
+12. [DONE] Bind Rust UI events to JavaScript callbacks via a native bridge.
 13. [ ] Implement a `fetch` polyfill for the QuickJS environment.
 
 ## Polish & Tooling

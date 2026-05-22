@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## [0.9.0] - Unreleased
+
+### Added
+- Integrated `QuickJS` (via `rquickjs`) as the application scripting engine.
+- Implemented a native-to-JavaScript bridge in `src/runtime.rs` and `src/runtime.js`.
+- Exposed `NativeUI` global object to JS for node creation and styling.
+- Added `eval` method to `JsRuntime` for executing JavaScript application logic.
+
+## [0.8.0] - Unreleased
+
+### Added
+- Integrated `glyphon` for high-performance native text rendering.
+- Updated `LayoutEngine` to store and expose text content from the AST.
+- Implemented a text render pass that handles preparation and rendering of text areas.
+- Aligned `wgpu` and `glyphon` versions to ensure API compatibility (using wgpu v23).
+- Added `cosmic-text` support via glyphon for advanced text shaping.
+
 ## [0.7.0] - Unreleased
 
 ### Added
