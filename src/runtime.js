@@ -1,14 +1,25 @@
+const _eventListeners = {};
+
 const NativeUI = {
     createNode: (type, styles, text) => {
-        // Native bridge call to Rust
         return _native_create_node(type, styles, text);
     },
     setStyle: (nodeId, styles) => {
-        // Native bridge call to Rust
         return _native_set_style(nodeId, styles);
+    },
+    addEventListener: (type, callback) => {
+        if (!_eventListeners[type]) {
+            _eventListeners[type] = [];
+        }
+        _eventListeners[type].push(callback);
     }
 };
 
-// Example usage
-// const root = NativeUI.createNode("Box", { flexDirection: "column" });
-// NativeUI.createNode("Text", { padding: "10px" }, "Hello from QuickJS!");
+// Internal global called from Rust
+globalThis._native_on_event = (type, data) => {
+    if (_eventListeners[type]) {
+        _eventListeners[type].forEach(callback => callback(data));
+    }
+};
+
+console.log("QuickJS: NativeUI bridge initialized.");

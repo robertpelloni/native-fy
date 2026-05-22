@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [0.10.0] - Unreleased
+
+### Added
+- Fully connected the QuickJS runtime to the application lifecycle.
+- Implemented basic input bridging: Mouse cursor tracking and click event dispatching to JavaScript.
+- Added `JsRuntime::dispatch_click` for safe event propagation from Rust to JS.
+- Refined `runtime.js` to support an `addEventListener` pattern for application logic.
+
 ## [0.9.0] - Unreleased
 
 ### Added

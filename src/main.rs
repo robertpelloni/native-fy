@@ -1,11 +1,13 @@
 mod layout;
 mod ui_gen;
+mod runtime;
 
 use std::sync::Arc;
 use layout::LayoutEngine;
+use runtime::JsRuntime;
 use winit::{
     application::ApplicationHandler,
-    event::WindowEvent,
+    event::{WindowEvent, ElementState, MouseButton},
     event_loop::{ActiveEventLoop, EventLoop},
     window::{Window, WindowId},
 };
@@ -453,6 +455,8 @@ struct NativefyApp {
     render_state: Option<RenderState>,
     layout_engine: Option<LayoutEngine>,
     root_id: Option<taffy::prelude::NodeId>,
+    js_runtime: Option<JsRuntime>,
+    mouse_pos: [f32; 2],
 }
 
 impl ApplicationHandler for NativefyApp {
@@ -475,7 +479,13 @@ impl ApplicationHandler for NativefyApp {
             self.layout_engine = Some(engine);
             self.root_id = Some(root_id);
 
-            println!("Window and Wgpu successfully initialized!");
+            // Initialize QuickJS
+            let runtime = JsRuntime::new();
+            let bridge_code = include_str!("runtime.js");
+            runtime.eval(bridge_code);
+            self.js_runtime = Some(runtime);
+
+            println!("Window, Wgpu, and QuickJS successfully initialized!");
         }
     }
 
@@ -487,6 +497,14 @@ impl ApplicationHandler for NativefyApp {
             WindowEvent::Resized(physical_size) => {
                 if let Some(state) = self.render_state.as_mut() {
                     state.resize(physical_size);
+                }
+            }
+            WindowEvent::CursorMoved { position, .. } => {
+                self.mouse_pos = [position.x as f32, position.y as f32];
+            }
+            WindowEvent::MouseInput { state: ElementState::Pressed, button: MouseButton::Left, .. } => {
+                if let Some(runtime) = self.js_runtime.as_ref() {
+                    runtime.dispatch_click(self.mouse_pos[0], self.mouse_pos[1]);
                 }
             }
             WindowEvent::RedrawRequested => {

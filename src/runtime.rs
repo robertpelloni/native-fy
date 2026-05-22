@@ -35,4 +35,16 @@ impl JsRuntime {
             ctx.eval::<(), _>(source).expect("failed to evaluate JS");
         });
     }
+
+    pub fn dispatch_click(&self, x: f32, y: f32) {
+        self.context.with(|ctx| {
+            let globals = ctx.globals();
+            if let Ok(handler) = globals.get::<_, Function>("_native_on_event") {
+                let data = rquickjs::Object::new(ctx.clone()).unwrap();
+                let _ = data.set("x", x);
+                let _ = data.set("y", y);
+                let _ = handler.call::<(String, rquickjs::Object), ()>(("click".to_string(), data));
+            }
+        });
+    }
 }
