@@ -13,18 +13,20 @@
 8. [DONE] Implement basic `WindowEvent::RedrawRequested` to clear the screen with a solid color.
 9. [DONE] Create a "Box" renderer to draw rectangles based on Taffy layout coordinates using instanced drawing.
 10. [DONE] Implement a "Text" renderer using `glyphon` for high-performance font rendering.
+11. [DONE] Implement "Image" rendering support in the `wgpu` pipeline.
 
 ## Scripting Runtime (QuickJS)
-11. [DONE] Scaffold `QuickJS` integration in `src/runtime.rs` and `src/runtime.js`.
-12. [DONE] Bind Rust UI events to JavaScript callbacks via a native bridge.
-13. [ ] Implement a `fetch` polyfill for the QuickJS environment.
+12. [DONE] Scaffold `QuickJS` integration in `src/runtime.rs` and `src/runtime.js`.
+13. [DONE] Bind Rust UI events to JavaScript callbacks via a native bridge.
+14. [DONE] Implement dynamic styling bridge for JS-to-Native property mapping.
+15. [ ] Implement a `fetch` polyfill for the QuickJS environment.
 
 ## Performance & Optimization
-14. [DONE] Instrument core engine for frame-time and layout-time measurement.
-15. [DONE] Conduct benchmark of JS-to-Native bridge (1000 nodes in < 3ms).
-16. [ ] Implement dynamic storage buffer resizing for nodes.
+16. [DONE] Instrument core engine for frame-time and layout-time measurement.
+17. [DONE] Conduct benchmark of JS-to-Native bridge (1000 nodes in < 3ms).
+18. [ ] Implement dynamic storage buffer resizing for nodes.
 
 ## Polish & Tooling
-17. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
-18. [DONE] Add `nativefy` convenience script to `package.json`.
-19. [ ] Add automated UI integration tests using Playwright against the native window (via screenshot comparison).
+19. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
+20. [DONE] Add `nativefy` convenience script to `package.json`.
+21. [ ] Add automated UI integration tests using Playwright against the native window (via screenshot comparison).

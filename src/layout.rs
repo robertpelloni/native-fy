@@ -1,5 +1,6 @@
 use taffy::prelude::*;
 use std::collections::HashMap;
+use taffy::TaffyError;
 
 #[derive(Debug, Clone)]
 pub struct AstRect {
@@ -39,6 +40,7 @@ pub enum ValidationError {
 pub struct LayoutEngine {
     taffy: TaffyTree,
     node_metadata: HashMap<NodeId, String>, // NodeId -> Text content
+    node_types: HashMap<NodeId, String>,   // NodeId -> Type
 }
 
 impl LayoutEngine {
@@ -46,6 +48,7 @@ impl LayoutEngine {
         Self {
             taffy: TaffyTree::new(),
             node_metadata: HashMap::new(),
+            node_types: HashMap::new(),
         }
     }
 
@@ -131,11 +134,6 @@ impl LayoutEngine {
             _ => return Err(ValidationError::UnsupportedNodeType(node.node_type.clone())),
         }
 
-        // Validate Unsupported Styles
-        if let Some((k, v)) = node.styles.unsupported.iter().next() {
-            return Err(ValidationError::UnsupportedProperty(k.clone(), v.clone()));
-        }
-
         // Map Styles to Taffy
         let mut style = Style::DEFAULT;
 
@@ -188,7 +186,15 @@ impl LayoutEngine {
             self.node_metadata.insert(node_id, text.clone());
         }
 
+        self.node_types.insert(node_id, node.node_type.clone());
+
         Ok(node_id)
+    }
+
+    pub fn add_child(&mut self, parent_id: NodeId, child_id: NodeId) -> Result<(), TaffyError> {
+        let mut children = self.taffy.children(parent_id)?;
+        children.push(child_id);
+        self.taffy.set_children(parent_id, &children)
     }
 
     pub fn compute(&mut self, root_id: NodeId) -> Result<(), taffy::TaffyError> {
@@ -207,11 +213,7 @@ impl LayoutEngine {
         self.node_metadata.get(&id)
     }
 
-    pub fn print_layout(&self, id: NodeId, prefix: &str) {
-        let layout = self.taffy.layout(id).unwrap();
-        println!("{prefix} SIZE: {}x{}, POS: {},{}", layout.size.width, layout.size.height, layout.location.x, layout.location.y);
-        for child in self.taffy.children(id).unwrap() {
-            self.print_layout(child, &format!("{prefix}  "));
-        }
+    pub fn get_type(&self, id: NodeId) -> Option<&String> {
+        self.node_types.get(&id)
     }
 }

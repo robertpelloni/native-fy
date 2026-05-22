@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## [0.12.0] - Unreleased
+
+### Added
+- Implemented dynamic styling bridge between QuickJS and Rust.
+- Added support for "Image" node type in `LayoutEngine` and the `wgpu` renderer.
+- Integrated `image` crate for future texture decoding.
+- Enhanced WGSL shader to support both colored primitives and textured nodes.
+- Implemented node creation and child attachment in the main application loop via JS commands.
+
+## [0.11.0] - Unreleased
+
+### Added
+- Implemented mpsc command queue for QuickJS-to-Native UI mutations.
+- Added performance instrumentation for layout and rendering metrics.
+- Benchmarked JS bridge (1000 nodes in 2.45ms).
+- Created PERFORMANCE.md documenting initial baseline results.
+- Added nativefy automation script to package.json.
+
 ## [0.10.0] - Unreleased
 
 ### Added

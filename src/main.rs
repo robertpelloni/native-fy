@@ -5,7 +5,7 @@ mod runtime;
 use std::sync::Arc;
 use std::time::Instant;
 use std::sync::mpsc::{self, Receiver, Sender};
-use layout::LayoutEngine;
+use layout::{LayoutEngine, Node, AstRect, FlexStyles};
 use runtime::{JsRuntime, UiCommand};
 use winit::{
     application::ApplicationHandler,
@@ -68,6 +68,8 @@ struct NodeData {
     pos: [f32; 2],
     size: [f32; 2],
     color: [f32; 4],
+    mode: u32,
+    _padding: [f32; 3],
 }
 
 struct RenderState {
@@ -90,6 +92,9 @@ struct RenderState {
     viewport: glyphon::Viewport,
     text_atlas: TextAtlas,
     text_renderer: TextRenderer,
+
+    // Texture
+    diffuse_texture: wgpu::Texture,
 }
 
 impl RenderState {
@@ -144,6 +149,29 @@ impl RenderState {
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
+        // Texture creation (placeholder)
+        let diffuse_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Diffuse Texture"),
+            size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        let diffuse_view = diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let diffuse_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
         let globals_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Globals Buffer"),
             size: std::mem::size_of::<Globals>() as u64,
@@ -183,6 +211,22 @@ impl RenderState {
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
             ],
         });
 
@@ -197,6 +241,14 @@ impl RenderState {
                 wgpu::BindGroupEntry {
                     binding: 1,
                     resource: node_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&diffuse_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&diffuse_sampler),
                 },
             ],
         });
@@ -291,6 +343,8 @@ impl RenderState {
             viewport,
             text_atlas,
             text_renderer,
+
+            diffuse_texture,
         }
     }
 
@@ -418,8 +472,7 @@ impl RenderState {
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
-        let render_duration = render_start.elapsed();
-        // println!("Performance: Frame rendered in {:?}", render_duration);
+        let _render_duration = render_start.elapsed();
 
         Ok(())
     }
@@ -441,6 +494,8 @@ impl RenderState {
                 pos: [x, y],
                 size: [layout.size.width, layout.size.height],
                 color: [0.5, 0.6, 0.7, 1.0], // Placeholder color
+                mode: if engine.get_type(id) == Some(&"Image".to_string()) { 1 } else { 0 },
+                _padding: [0.0; 3],
             });
 
             if let Some(text) = engine.get_text(id) {
@@ -537,12 +592,38 @@ impl ApplicationHandler for NativefyApp {
             }
             WindowEvent::RedrawRequested => {
                 // Process UI commands
+                let mut recompute = false;
                 while let Ok(cmd) = self.ui_rx.try_recv() {
                     match cmd {
                         UiCommand::CreateNode { node_type, styles, text } => {
-                            println!("Native: Handling CreateNode for {}", node_type);
-                            // Full implementation would add to LayoutEngine and recompute
+                            if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
+                                let new_node = Node {
+                                    node_type,
+                                    rect: AstRect { x: 0.0, y: 0.0, width: 100.0, height: 100.0 }, // Default size
+                                    styles: FlexStyles {
+                                        flex_direction: styles.get("flexDirection").cloned().unwrap_or("row".to_string()),
+                                        padding: styles.get("padding").cloned().unwrap_or("0px".to_string()),
+                                        margin: styles.get("margin").cloned().unwrap_or("0px".to_string()),
+                                        align_items: styles.get("alignItems").cloned().unwrap_or("stretch".to_string()),
+                                        justify_content: styles.get("justifyContent").cloned().unwrap_or("flex-start".to_string()),
+                                        unsupported: std::collections::HashMap::new(),
+                                    },
+                                    text,
+                                    value: None,
+                                    children: vec![],
+                                };
+                                if let Ok(new_id) = engine.build_tree(&new_node) {
+                                    let _ = engine.add_child(root_id, new_id);
+                                }
+                                recompute = true;
+                            }
                         }
+                    }
+                }
+
+                if recompute {
+                    if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
+                        let _ = engine.compute(root_id);
                     }
                 }
 

@@ -1,10 +1,11 @@
 use rquickjs::{Context, Runtime, Function};
 use std::sync::mpsc::Sender;
+use std::collections::HashMap;
 
 pub enum UiCommand {
     CreateNode {
         node_type: String,
-        styles: std::collections::HashMap<String, String>,
+        styles: HashMap<String, String>,
         text: Option<String>,
     },
 }
@@ -25,7 +26,17 @@ impl JsRuntime {
 
             let tx_create = tx.clone();
             globals.set("_native_create_node", Function::new(ctx.clone(), move |_type: String, _styles: rquickjs::Object, _text: Option<String>| {
-                let styles = std::collections::HashMap::new();
+                let mut styles = HashMap::new();
+
+                // Extract styles from JS object
+                for key_res in _styles.keys::<String>() {
+                    if let Ok(key) = key_res {
+                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                            styles.insert(key, val);
+                        }
+                    }
+                }
+
                 let _ = tx_create.send(UiCommand::CreateNode {
                     node_type: _type,
                     styles,
@@ -79,15 +90,17 @@ mod tests {
         for count in counts {
             let start = Instant::now();
             runtime.eval(&format!(
-                "for (let i = 0; i < {}; i++) {{ _native_create_node('Box', {{}}, null); }}",
+                "for (let i = 0; i < {}; i++) {{ _native_create_node('Box', {{ padding: '10px' }}, null); }}",
                 count
             ));
             let duration = start.elapsed();
-            println!("JS Performance: Created {} nodes in {:?}", count, duration);
+            println!("JS Performance: Created {} nodes with styles in {:?}", count, duration);
 
-            // Verify nodes received in channel
+            // Verify nodes and styles received in channel
             for _ in 0..count {
-                rx.try_recv().expect("node not received in channel");
+                if let UiCommand::CreateNode { styles, .. } = rx.try_recv().expect("node not received") {
+                    assert_eq!(styles.get("padding").unwrap(), "10px");
+                }
             }
         }
     }

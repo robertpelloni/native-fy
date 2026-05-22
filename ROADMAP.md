@@ -27,8 +27,8 @@ Integrate `QuickJS` to allow JavaScript-based business logic to interact with th
 Connect all engine components to provide a cohesive application environment.
 - [DONE] Connect `winit` input events to QuickJS.
 - [DONE] Conduct initial performance validation and bridge benchmarking.
+- [DONE] Implement "Image" node support in the layout and rendering pipeline.
 - [ ] Implement a `fetch` polyfill for QuickJS.
-- [ ] Add support for image rendering in the GPU pipeline.
 
 ## Phase 8: Optimization & Scaling
 - [ ] Implement dynamically resizing GPU buffers.
