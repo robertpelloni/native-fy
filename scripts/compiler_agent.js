@@ -46,7 +46,21 @@ async function main() {
     const astJson = fs.readFileSync(astFile, 'utf-8');
     const systemPromptTemplate = fs.readFileSync(path.join(__dirname, '../prompts/transpiler_agent.txt'), 'utf-8');
 
-    let currentPrompt = `${systemPromptTemplate}\n\nHere is the input AST to compile:\n\`\`\`json\n${astJson}\n\`\`\`\n\nPlease output the Rust code for the Taffy tree inside \`src/main.rs\`. Include only the \`main()\` function and required imports.`;
+    let currentPrompt = `${systemPromptTemplate}
+
+CRITICAL ARCHITECTURAL CHANGE:
+The project now uses a wgpu-based rendering shell in \`src/main.rs\`.
+Your task is NOT to overwrite \`src/main.rs\`.
+Instead, you must output a Rust function named \`generate_ui_tree\` that takes a \`&mut LayoutEngine\` and returns a \`NodeId\`.
+This function will be used by \`src/main.rs\` to build the Taffy layout tree.
+
+Here is the input AST to compile:
+\`\`\`json
+${astJson}
+\`\`\`
+
+Please output ONLY the implementation of \`generate_ui_tree\` and any necessary helper imports for \`src/ui_gen.rs\`.
+Wrap the code in a \`\`\`rust block.`;
 
     let iteration = 0;
     let success = false;
@@ -60,9 +74,18 @@ async function main() {
             const llmResponse = await callGemini(currentPrompt);
             const rustCode = extractRustCode(llmResponse);
 
-            // Output to the target file
-            const targetFile = path.join(__dirname, '../src/main.rs');
-            fs.writeFileSync(targetFile, rustCode);
+            // Output to a separate module to avoid overwriting main shell
+            const targetFile = path.join(__dirname, '../src/ui_gen.rs');
+
+            const fileContent = `use crate::layout::{Node, AstRect, FlexStyles, LayoutEngine};
+use taffy::prelude::NodeId;
+use std::collections::HashMap;
+
+pub fn generate_ui_tree(engine: &mut LayoutEngine) -> NodeId {
+${rustCode}
+}`;
+
+            fs.writeFileSync(targetFile, fileContent);
             console.log(`Wrote generated code to ${targetFile}. Running cargo check...`);
 
             // Compile/check
@@ -73,10 +96,15 @@ async function main() {
             } catch (error) {
                 const compilerError = error.stderr ? error.stderr.toString() : error.message;
                 console.error("Compilation Failed.");
-                // console.error(compilerError);
 
                 // Format remediation prompt
-                currentPrompt = `The previous Rust code you provided failed to compile. Here is the compiler output:\n\n\`\`\`\n${compilerError}\n\`\`\`\n\nPlease fix the errors and provide the corrected Rust code wrapped in \`\`\`rust block.`;
+                currentPrompt = `The previous Rust code you provided for \`src/ui_gen.rs\` failed to compile. Here is the compiler output:
+
+\`\`\`
+${compilerError}
+\`\`\`
+
+Please fix the errors and provide the corrected Rust code (the body of the function or the whole function) wrapped in \`\`\`rust block.`;
             }
 
         } catch (error) {

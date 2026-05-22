@@ -1,4 +1,5 @@
 mod layout;
+mod ui_gen;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -10,9 +11,140 @@ use winit::{
     window::{Window, WindowId},
 };
 
+struct RenderState {
+    surface: wgpu::Surface<'static>,
+    device: wgpu::Device,
+    queue: wgpu::Queue,
+    config: wgpu::SurfaceConfiguration,
+    size: winit::dpi::PhysicalSize<u32>,
+}
+
+impl RenderState {
+    async fn new(window: Arc<Window>) -> Self {
+        let size = window.inner_size();
+
+        // The instance is a handle to our GPU
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::all(),
+            flags: wgpu::InstanceFlags::default(),
+            backend_options: wgpu::BackendOptions::default(),
+            memory_budget_thresholds: wgpu::MemoryBudgetThresholds::default(),
+            display: None,
+        });
+
+        // # Safety
+        //
+        // The surface needs to live as long as the window that created it.
+        let surface = instance.create_surface(window.clone()).unwrap();
+
+        let adapter = instance.request_adapter(
+            &wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::default(),
+                compatible_surface: Some(&surface),
+                force_fallback_adapter: false,
+            },
+        ).await.unwrap();
+
+        let (device, queue) = adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: wgpu::MemoryHints::default(),
+                experimental_features: wgpu::ExperimentalFeatures::default(),
+                trace: wgpu::Trace::Off,
+            },
+        ).await.unwrap();
+
+        let surface_caps = surface.get_capabilities(&adapter);
+        let surface_format = surface_caps.formats.iter()
+            .copied()
+            .filter(|f| f.is_srgb())
+            .next()
+            .unwrap_or(surface_caps.formats[0]);
+
+        let config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: surface_format,
+            width: size.width,
+            height: size.height,
+            present_mode: surface_caps.present_modes[0],
+            alpha_mode: surface_caps.alpha_modes[0],
+            view_formats: vec![],
+            desired_maximum_frame_latency: 2,
+        };
+        surface.configure(&device, &config);
+
+        Self {
+            surface,
+            device,
+            queue,
+            config,
+            size,
+        }
+    }
+
+    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+        if new_size.width > 0 && new_size.height > 0 {
+            self.size = new_size;
+            self.config.width = new_size.width;
+            self.config.height = new_size.height;
+            self.surface.configure(&self.device, &self.config);
+        }
+    }
+
+    fn render(&mut self) -> Result<(), wgpu::SurfaceStatus> {
+        let output = self.surface.get_current_texture();
+        let output = match output {
+            wgpu::CurrentSurfaceTexture::Success(texture) => texture,
+            wgpu::CurrentSurfaceTexture::Suboptimal(texture) => texture,
+            wgpu::CurrentSurfaceTexture::Timeout => return Err(wgpu::SurfaceStatus::Timeout),
+            wgpu::CurrentSurfaceTexture::Outdated => return Err(wgpu::SurfaceStatus::Outdated),
+            wgpu::CurrentSurfaceTexture::Lost => return Err(wgpu::SurfaceStatus::Lost),
+            wgpu::CurrentSurfaceTexture::Occluded => return Ok(()),
+            wgpu::CurrentSurfaceTexture::Validation => return Ok(()),
+        };
+
+        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Render Encoder"),
+        });
+
+        {
+            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.1,
+                            g: 0.2,
+                            b: 0.3,
+                            a: 1.0,
+                        }),
+                        store: wgpu::StoreOp::Store,
+                    },
+                    depth_slice: None,
+                })],
+                depth_stencil_attachment: None,
+                occlusion_query_set: None,
+                timestamp_writes: None,
+                multiview_mask: None,
+            });
+        }
+
+        self.queue.submit(std::iter::once(encoder.finish()));
+        output.present();
+
+        Ok(())
+    }
+}
+
 #[derive(Default)]
 struct NativefyApp {
     window: Option<Arc<Window>>,
+    render_state: Option<RenderState>,
 }
 
 impl ApplicationHandler for NativefyApp {
@@ -22,8 +154,13 @@ impl ApplicationHandler for NativefyApp {
                 .with_title("Native-fy UI Engine")
                 .with_inner_size(winit::dpi::LogicalSize::new(800.0, 600.0));
 
-            self.window = Some(Arc::new(event_loop.create_window(window_attributes).unwrap()));
-            println!("Window successfully initialized and resumed!");
+            let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
+            self.window = Some(window.clone());
+
+            let render_state = pollster::block_on(RenderState::new(window));
+            self.render_state = Some(render_state);
+
+            println!("Window and Wgpu successfully initialized!");
         }
     }
 
@@ -32,8 +169,22 @@ impl ApplicationHandler for NativefyApp {
             WindowEvent::CloseRequested => {
                 event_loop.exit();
             }
+            WindowEvent::Resized(physical_size) => {
+                if let Some(state) = self.render_state.as_mut() {
+                    state.resize(physical_size);
+                }
+            }
             WindowEvent::RedrawRequested => {
-                // Future wgpu rendering will go here
+                if let Some(state) = self.render_state.as_mut() {
+                    match state.render() {
+                        Ok(_) => {}
+                        Err(wgpu::SurfaceStatus::Lost) => state.resize(state.size),
+                        Err(e) => eprintln!("{:?}", e),
+                    }
+                }
+                if let Some(window) = self.window.as_ref() {
+                    window.request_redraw();
+                }
             }
             _ => (),
         }
@@ -43,53 +194,14 @@ impl ApplicationHandler for NativefyApp {
 fn main() {
     println!("Initializing Native-fy Windowing Environment...");
 
-    // Create a mock AST node matching the expected structure
-    let root_node = Node {
-        node_type: "Box".to_string(),
-        rect: AstRect { x: 0.0, y: 0.0, width: 800.0, height: 600.0 },
-        styles: FlexStyles {
-            flex_direction: "column".to_string(),
-            padding: "20px".to_string(),
-            margin: "0px".to_string(),
-            align_items: "center".to_string(),
-            justify_content: "center".to_string(),
-            unsupported: HashMap::new(),
-        },
-        text: None,
-        value: None,
-        children: vec![
-            Node {
-                node_type: "Text".to_string(),
-                rect: AstRect { x: 0.0, y: 0.0, width: 100.0, height: 20.0 },
-                styles: FlexStyles {
-                    flex_direction: "row".to_string(),
-                    padding: "0px".to_string(),
-                    margin: "10px".to_string(),
-                    align_items: "normal".to_string(),
-                    justify_content: "normal".to_string(),
-                    unsupported: HashMap::new(),
-                },
-                text: Some("Test Text".to_string()),
-                value: None,
-                children: vec![],
-            }
-        ],
-    };
-
     let mut engine = LayoutEngine::new();
 
-    match engine.build_tree(&root_node) {
-        Ok(root_id) => {
-            println!("Successfully built Taffy tree. Computing layout...");
-            if let Err(e) = engine.compute(root_id) {
-                println!("Layout computation failed: {:?}", e);
-            } else {
-                engine.print_layout(root_id, "");
-            }
-        }
-        Err(e) => {
-            println!("Validation failed: {:?}", e);
-        }
+    let root_id = ui_gen::generate_ui_tree(&mut engine);
+    println!("Successfully built Taffy tree from generated code. Computing layout...");
+    if let Err(e) = engine.compute(root_id) {
+        println!("Layout computation failed: {:?}", e);
+    } else {
+        engine.print_layout(root_id, "");
     }
 
     // Initialize winit event loop

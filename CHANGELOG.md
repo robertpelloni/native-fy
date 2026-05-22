@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [0.6.0] - Unreleased
+
+### Added
+- Initialized `wgpu` rendering context in `src/main.rs`.
+- Implemented foundational `wgpu` lifecycle: Instance, Adapter, Device, Queue, and Surface creation.
+- Added window resizing and basic redraw handling (clearing the screen).
+- Expanded `ROADMAP.md` and `TODO.md` to reflect Phase 5 (Rendering) and Phase 6 (QuickJS).
+- Created `MEMORY.md` to track long-term architectural decisions.
+- Created `IDEAS.md` for project expansion brainstorming.
+
 ## [0.5.0] - Unreleased
 
 ### Added
