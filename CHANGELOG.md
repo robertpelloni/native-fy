@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [0.28.1] - 2026-05-23
+- Integrated core system integration tests into the build workflow (`build.rs`).
+- Implemented a Throughput Stress Test (`scripts/stress_test.js`) for high node counts.
+- Validated engine stability with 5000+ nodes and meeting latency targets.
+- Refined automated repository synchronization and intelligent merge protocols.
+
 ## [0.27.0] - 2026-05-23
 - Implemented core system integration testing suite (`scripts/integration_test.js`).
 - Unified the autonomous lifecycle under a single orchestration command.
