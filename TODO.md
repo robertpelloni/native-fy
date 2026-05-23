@@ -22,35 +22,37 @@
 17. [DONE] Implement Dynamic Texture Management and GPU Uploads.
 18. [DONE] Implement Cache Eviction Policies for buffers and textures.
 19. [DONE] Implement Frame Capture (Screenshot) mechanism.
+20. [DONE] Implement performance history graphs in the Dashboard.
 
 ## Scripting Runtime (QuickJS)
-20. [DONE] Scaffold `QuickJS` integration in `src/runtime.rs` and `src/runtime.js`.
-21. [DONE] Bind Rust UI events to JavaScript callbacks via a native bridge.
-22. [DONE] Implement dynamic styling bridge for JS-to-Native property mapping.
-23. [DONE] Implement a `fetch` polyfill for the QuickJS environment.
-24. [DONE] Integrate Autonomous Protocol Sync into the JS runtime.
-25. [DONE] Implement standard component library abstractions (Button, Card, etc.).
-26. [DONE] Implement Native Component Extensions for performance optimization.
-27. [DONE] Implement bridge health checks and heartbeats.
-28. [DONE] Implement `NativeUI.reload()` for live re-generation.
-29. [DONE] Implement Autonomous Task Scheduler (JS).
-30. [DONE] Implement `NativeUI.runPipeline()` for engine-triggered automation.
-31. [DONE] Implement `NativeUI.screenshot()` for visual testing.
+21. [DONE] Scaffold `QuickJS` integration in `src/runtime.rs` and `src/runtime.js`.
+22. [DONE] Bind Rust UI events to JavaScript callbacks via a native bridge.
+23. [DONE] Implement dynamic styling bridge for JS-to-Native property mapping.
+24. [DONE] Implement a `fetch` polyfill for the QuickJS environment.
+25. [DONE] Integrate Autonomous Protocol Sync into the JS runtime.
+26. [DONE] Implement standard component library abstractions (Button, Card, etc.).
+27. [DONE] Implement Native Component Extensions for performance optimization.
+28. [DONE] Implement bridge health checks and heartbeats.
+29. [DONE] Implement `NativeUI.reload()` for live re-generation.
+30. [DONE] Implement Autonomous Task Scheduler (JS).
+31. [DONE] Implement `NativeUI.runPipeline()` for engine-triggered automation.
+32. [DONE] Implement `NativeUI.screenshot()` for visual testing.
+33. [DONE] Implement `NativeUI.toggleDashboard()` for runtime monitoring.
 
 ## Performance & Stability
-32. [DONE] Instrument core engine for frame-time and layout-time measurement.
-33. [DONE] Conduct benchmark of JS-to-Native bridge (1000 nodes in < 3ms).
-34. [DONE] Implement robust panic handling and disk-based error logging.
-35. [DONE] Create automated stability monitoring script for live deployment.
-36. [DONE] Integrate Autonomous Execution Protocol into the core pipeline.
-37. [DONE] Integrate Protocol Sync into the Rust build workflow (`build.rs`).
-38. [DONE] Implement Asynchronous Asset Loading pipeline.
-39. [DONE] Implement UI Command Batching.
-40. [DONE] Implement automated performance benchmarking and report generation.
-41. [DONE] Implement Continuous Health Watchdog (`health_monitor.js`).
-42. [DONE] Implement Full End-to-End lifecycle validation (`e2e_test.js`).
-43. [DONE] Implement Automated Visual Regression testing suite.
+34. [DONE] Instrument core engine for frame-time and layout-time measurement.
+35. [DONE] Conduct benchmark of JS-to-Native bridge (1000 nodes in < 3ms).
+36. [DONE] Implement robust panic handling and disk-based error logging.
+37. [DONE] Create automated stability monitoring script for live deployment.
+38. [DONE] Integrate Autonomous Execution Protocol into the core pipeline.
+39. [DONE] Integrate Protocol Sync into the Rust build workflow (`build.rs`).
+40. [DONE] Implement Asynchronous Asset Loading pipeline.
+41. [DONE] Implement UI Command Batching.
+42. [DONE] Implement automated performance benchmarking and report generation.
+43. [DONE] Implement Continuous Health Watchdog (`health_monitor.js`).
+44. [DONE] Implement Full End-to-End lifecycle validation (`e2e_test.js`).
+45. [DONE] Implement Automated Visual Regression testing suite.
 
 ## Polish & Tooling
-44. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
-45. [DONE] Add `nativefy` convenience script to `package.json`.
+46. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
+47. [DONE] Add `nativefy` convenience script to `package.json`.

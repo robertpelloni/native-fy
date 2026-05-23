@@ -36,8 +36,9 @@
 - [x] Dynamic Texture Management & GPU Assets
 - [x] Live UI Tree Reloading (`NativeUI.reload()`)
 - [x] Autonomous Task Execution & Runtime Automation
-- [x] **Visual Regression Suite & Frame Capture**
-- [x] **Memory Safety: Cache Eviction Policies**
+- [x] Visual Regression Suite & Frame Capture
+- [x] Memory Safety: Cache Eviction Policies
+- [x] **Real-time Performance Graphs & Runtime Dashboard Toggle**
 - [ ] SVG/Vector graphics support
 - [ ] Python/Zig language bindings
 - [ ] Embedded platform targets (ARM/Linux)

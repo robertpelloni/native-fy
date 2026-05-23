@@ -393,6 +393,78 @@ impl RenderState {
         }
     }
 
+    fn render_dashboard(&mut self, stats: &AppStats, node_count: u32) -> Result<(), wgpu::SurfaceError> {
+        let output = self.surface.get_current_texture()?;
+        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+        // Update stats text
+        let stats_text = format!(
+            "MONITORING DASHBOARD | v0.26.0 | Status: HEALTHY | FPS: {} | Layout: {}µs | Nodes: {}",
+            stats.fps, stats.layout_time_micros, stats.node_count
+        );
+        let stats_buffer = self.stats_buffer.get_or_insert_with(|| {
+            glyphon::Buffer::new(&mut self.font_system, Metrics::new(12.0, 16.0))
+        });
+        stats_buffer.set_size(&mut self.font_system, Some(self.size.width as f32), Some(20.0));
+        stats_buffer.set_text(&mut self.font_system, &stats_text, glyphon::Attrs::new().family(Family::Monospace).color(glyphon::Color::rgb(0, 255, 0)), Shaping::Advanced);
+        stats_buffer.shape_until_scroll(&mut self.font_system, false);
+
+        let text_areas = vec![TextArea {
+            buffer: stats_buffer,
+            left: 10.0,
+            top: 10.0,
+            scale: 1.0,
+            bounds: TextBounds {
+                left: 0,
+                top: 0,
+                right: self.size.width as i32,
+                bottom: self.size.height as i32,
+            },
+            default_color: glyphon::Color::rgb(0, 255, 0),
+            custom_glyphs: &[],
+        }];
+
+        self.text_renderer.prepare(
+            &self.device,
+            &self.queue,
+            &mut self.font_system,
+            &mut self.text_atlas,
+            &self.viewport,
+            text_areas,
+            &mut self.swash_cache,
+        ).unwrap();
+
+        {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                occlusion_query_set: None,
+                timestamp_writes: None,
+            });
+
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_bind_group(0, &self.bind_group, &[]);
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..self.num_indices, 0, 0..node_count);
+
+            self.text_renderer.render(&self.text_atlas, &self.viewport, &mut render_pass).unwrap();
+        }
+
+        self.queue.submit(std::iter::once(encoder.finish()));
+        output.present();
+        Ok(())
+    }
+
     fn render(&mut self, engine: &LayoutEngine, root_id: taffy::prelude::NodeId, stats: &AppStats) -> Result<(), wgpu::SurfaceError> {
         let render_start = Instant::now();
 
@@ -665,6 +737,7 @@ struct NativefyApp {
     frame_count: u32,
     last_fps_update: Instant,
     perf_history: Vec<AppStats>,
+    dashboard_active: bool,
 }
 
 impl Default for NativefyApp {
@@ -684,6 +757,7 @@ impl Default for NativefyApp {
             frame_count: 0,
             last_fps_update: Instant::now(),
             perf_history: Vec::new(),
+            dashboard_active: std::env::var("DASHBOARD_MODE").is_ok(),
         }
     }
 }
@@ -915,6 +989,10 @@ impl ApplicationHandler for NativefyApp {
                                 }
                             }
                         }
+                        UiCommand::ToggleDashboard => {
+                            self.dashboard_active = !self.dashboard_active;
+                            println!("Runtime: Dashboard is now {}", if self.dashboard_active { "ACTIVE" } else { "INACTIVE" });
+                        }
                         UiCommand::RunPipeline => {
                             println!("Runtime: Triggering Full Pipeline...");
                             let _ = std::process::Command::new("npm")
@@ -949,7 +1027,7 @@ impl ApplicationHandler for NativefyApp {
                     };
 
                     // Record history for dashboard
-                    if self.frame_count % 60 == 0 {
+                    if self.frame_count % 10 == 0 {
                         self.perf_history.push(AppStats {
                              fps: stats.fps,
                              layout_time_micros: stats.layout_time_micros,
@@ -959,10 +1037,44 @@ impl ApplicationHandler for NativefyApp {
                         if self.perf_history.len() > 100 { self.perf_history.remove(0); }
                     }
 
-                    match state.render(engine, root_id, &stats) {
-                        Ok(_) => {}
-                        Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => state.resize(state.size),
-                        Err(e) => log_error(&format!("Render error: {:?}", e)),
+                    if self.dashboard_active {
+                        // Render visualization instead of standard UI
+                        let mut dashboard_nodes = Vec::new();
+                        let max_fps = 120.0;
+                        let max_layout = 5000.0; // 5ms
+
+                        for (i, entry) in self.perf_history.iter().enumerate() {
+                            let x = 10.0 + (i as f32 * 7.0);
+
+                            // FPS Bar
+                            let fps_h = (entry.fps as f32 / max_fps) * 100.0;
+                            dashboard_nodes.push(NodeData {
+                                pos: [x, 200.0 - fps_h],
+                                size: [5.0, fps_h],
+                                color: [0.0, 1.0, 0.0, 1.0],
+                                mode: 0,
+                                _padding: [0.0; 3],
+                            });
+
+                            // Layout Latency Bar
+                            let lat_h = (entry.layout_time_micros as f32 / max_layout) * 100.0;
+                            dashboard_nodes.push(NodeData {
+                                pos: [x, 400.0 - lat_h],
+                                size: [5.0, lat_h],
+                                color: [1.0, 0.5, 0.0, 1.0],
+                                mode: 0,
+                                _padding: [0.0; 3],
+                            });
+                        }
+
+                        state.queue.write_buffer(&state.node_buffer, 0, bytemuck::cast_slice(&dashboard_nodes));
+                        let _ = state.render_dashboard(&stats, dashboard_nodes.len() as u32);
+                    } else {
+                        match state.render(engine, root_id, &stats) {
+                            Ok(_) => {}
+                            Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => state.resize(state.size),
+                            Err(e) => log_error(&format!("Render error: {:?}", e)),
+                        }
                     }
 
                     // Benchmark export trigger

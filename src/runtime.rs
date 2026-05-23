@@ -21,6 +21,7 @@ pub enum UiCommand {
     Reload,
     RunPipeline,
     Screenshot { path: String },
+    ToggleDashboard,
 }
 
 pub struct JsRuntime {
@@ -115,6 +116,11 @@ impl JsRuntime {
             let tx_ss = tx.clone();
             globals.set("_native_screenshot", Function::new(ctx.clone(), move |path: String| {
                 let _ = tx_ss.send(UiCommand::Screenshot { path });
+            })).unwrap();
+
+            let tx_dash = tx.clone();
+            globals.set("_native_toggle_dashboard", Function::new(ctx.clone(), move || {
+                let _ = tx_dash.send(UiCommand::ToggleDashboard);
             })).unwrap();
 
             globals.set("_native_get_metadata", Function::new(ctx.clone(), || {

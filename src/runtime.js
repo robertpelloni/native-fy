@@ -42,6 +42,9 @@ const NativeUI = {
     screenshot: (path) => {
         _native_screenshot(path);
     },
+    toggleDashboard: () => {
+        _native_toggle_dashboard();
+    },
     Components: {
         Button: (text, onClick, styles = {}) => {
             // Use native button implementation for better efficiency
