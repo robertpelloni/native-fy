@@ -20,6 +20,12 @@ const NativeUI = {
             text: async () => text,
             json: async () => JSON.parse(text)
         };
+    },
+    syncProtocol: () => {
+        _native_sync_protocol();
+    },
+    getMetadata: () => {
+        return _native_get_metadata();
     }
 };
 

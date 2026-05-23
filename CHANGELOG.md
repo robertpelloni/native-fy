@@ -1,3 +1,7 @@
+
+## [0.17.0] - 2026-05-23
+- Autonomous protocol integration.
+- End-to-end pipeline automation.
 # CHANGELOG
 
 ## [0.16.0] - 2026-05-23

@@ -1,20 +1,19 @@
-# HANDOFF: Session Summary (v0.16.0)
+# HANDOFF: Session Summary (v0.17.0)
 
 ## Summary of Work
-- **Build Integration:** Created `build.rs` to automatically run `protocol_sync.js` before every Rust compilation. This ensures documentation is always up-to-date with the source.
-- **Dynamic Memory:** Replaced the fixed 1024-node limit with a dynamically resizing GPU storage buffer in `src/main.rs`. The engine now supports arbitrary UI complexity.
-- **Pipeline Stabilization:** Verified the full autonomous pipeline (Sync -> Build -> Monitor).
-- **Documentation:** Updated all metadata, vision, and roadmap files to version 0.16.0.
+- **Autonomous Runtime Sync:** Integrated the autonomous protocol into the JavaScript runtime. JS logic can now trigger a global documentation sync and retrieve project metadata (version, TODOs).
+- **Event Loop Integration:** The primary application now handles `SyncProtocol` commands asynchronously via its main event loop.
+- **Enhanced Debug Overlay:** Updated the debug overlay to display a new "AUTO-SYNC" status, reflecting the runtime's ability to maintain repository consistency.
+- **Documentation:** Synchronized all project metadata to version 0.17.0.
 
 ## Structural Shifts
-- The "Autonomous Execution Protocol" is now hard-wired into the `cargo` build process.
-- The rendering engine is no longer constrained by static buffer sizes.
+- The "Autonomous Execution Protocol" is no longer just a build-time check; it is now a runtime capability accessible via the scripting layer.
+- The `NativeUI` JS bridge has been expanded to support administrative protocol tasks.
 
 ## Unobvious Findings
-- Using `next_power_of_two()` for buffer resizing minimizes the number of expensive GPU buffer re-allocations and bind group updates.
-- `build.rs` must be used with `rerun-if-changed` to avoid unnecessary script execution during incremental builds.
+- `include_str!` in `src/runtime.rs` allows the engine to embed static metadata (like VERSION or TODO) directly into the binary, which the JS runtime can then expose for introspection.
 
 ## For the Successor
 - Focus is now shifting toward the **Component Library** (Phase 4).
-- The `NativeUI` JS object needs methods for standard UI widgets.
+- Consider implementing a "Command Palette" in JS that uses `NativeUI.syncProtocol()` and `NativeUI.getMetadata()` for a more interactive developer experience.
 - Next high-priority task: Automated visual regression testing using Playwright.

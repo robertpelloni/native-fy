@@ -460,7 +460,7 @@ impl RenderState {
 
         // Overlay Stats
         let stats_text = format!(
-            "v0.16.0 | FPS: {} | Layout: {:?} | Nodes: {} | Protocol: ACTIVE",
+            "v0.17.0 | FPS: {} | Layout: {:?} | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
             stats.fps, stats.layout_time, stats.node_count
         );
         let mut stats_buffer = glyphon::Buffer::new(&mut self.font_system, Metrics::new(12.0, 16.0));
@@ -726,6 +726,12 @@ impl ApplicationHandler for NativefyApp {
                                 }
                                 recompute = true;
                             }
+                        }
+                        UiCommand::SyncProtocol => {
+                            println!("Runtime: Triggering Protocol Sync...");
+                            let _ = std::process::Command::new("node")
+                                .arg("scripts/protocol_sync.js")
+                                .status();
                         }
                     }
                 }

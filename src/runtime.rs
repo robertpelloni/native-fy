@@ -8,6 +8,7 @@ pub enum UiCommand {
         styles: HashMap<String, String>,
         text: Option<String>,
     },
+    SyncProtocol,
 }
 
 pub struct JsRuntime {
@@ -57,6 +58,20 @@ impl JsRuntime {
                     }
                     Err(e) => format!("Error: {:?}", e),
                 }
+            })).unwrap();
+
+            let tx_sync = tx.clone();
+            globals.set("_native_sync_protocol", Function::new(ctx.clone(), move || {
+                let _ = tx_sync.send(UiCommand::SyncProtocol);
+            })).unwrap();
+
+            globals.set("_native_get_metadata", Function::new(ctx.clone(), || {
+                let version = include_str!("../VERSION.md").trim();
+                let todo = include_str!("../TODO.md");
+                let mut meta = HashMap::new();
+                meta.insert("version".to_string(), version.to_string());
+                meta.insert("todo".to_string(), todo.to_string());
+                meta
             })).unwrap();
         });
 
