@@ -5,6 +5,7 @@ mod runtime;
 use std::sync::Arc;
 use std::time::{Instant, Duration};
 use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -819,6 +820,7 @@ impl RenderState {
 
 struct NativefyApp {
     window: Option<Arc<Window>>,
+    pub fps_val: Arc<AtomicU32>,
     render_state: Option<RenderState>,
     layout_engine: Option<LayoutEngine>,
     root_id: Option<taffy::prelude::NodeId>,
@@ -841,6 +843,7 @@ impl Default for NativefyApp {
         let (ui_tx, ui_rx) = mpsc::channel();
         Self {
             window: None,
+            fps_val: Arc::new(AtomicU32::new(0)),
             render_state: None,
             layout_engine: None,
             root_id: None,
@@ -891,7 +894,7 @@ impl ApplicationHandler for NativefyApp {
             self.root_id = Some(root_id);
 
             // Initialize QuickJS
-            let runtime = JsRuntime::new(self.ui_tx.clone());
+            let runtime = JsRuntime::new(self.ui_tx.clone(), self.fps_val.clone());
             let mut bridge_code = include_str!("runtime.js").to_string();
             if std::env::var("PROD_MODE").is_ok() {
                 bridge_code = format!("globalThis.PROD_MODE = true; \n {}", bridge_code);
@@ -947,6 +950,7 @@ impl ApplicationHandler for NativefyApp {
                 let now = Instant::now();
                 if now.duration_since(self.last_fps_update) >= Duration::from_secs(1) {
                     self.fps = self.frame_count;
+                    self.fps_val.store(self.fps, Ordering::Relaxed);
                     self.frame_count = 0;
                     self.last_fps_update = now;
                 }

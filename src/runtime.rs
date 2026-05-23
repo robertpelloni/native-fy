@@ -1,6 +1,8 @@
 use rquickjs::{Context, Runtime, Function};
 use std::sync::mpsc::Sender;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicU32, Ordering};
 
 pub enum UiCommand {
     CreateNode {
@@ -35,7 +37,7 @@ pub struct JsRuntime {
 }
 
 impl JsRuntime {
-    pub fn new(tx: Sender<UiCommand>) -> Self {
+    pub fn new(tx: Sender<UiCommand>, fps_val: Arc<AtomicU32>) -> Self {
         let runtime = Runtime::new().expect("failed to create QuickJS runtime");
         let context = Context::full(&runtime).expect("failed to create QuickJS context");
 
@@ -146,13 +148,25 @@ impl JsRuntime {
                 meta
             })).unwrap();
 
-            globals.set("_native_get_perf_stats", Function::new(ctx.clone(), || {
-                // In a full implementation, this would return live stats from the AppState.
-                // For now, return a placeholder map.
+            let fps_clone = fps_val.clone();
+            globals.set("_native_get_perf_stats", Function::new(ctx.clone(), move || {
                 let mut stats = HashMap::new();
-                stats.insert("fps".to_string(), 60.0);
-                stats.insert("latency".to_string(), 0.5);
+                stats.insert("fps".to_string(), fps_clone.load(Ordering::Relaxed) as f64);
+                stats.insert("latency".to_string(), 0.0); // Placeholder for latency
                 stats
+            })).unwrap();
+
+            let sys = Arc::new(Mutex::new(sysinfo::System::new_all()));
+            globals.set("_native_get_system_metrics", Function::new(ctx.clone(), move || {
+                let mut sys = sys.lock().unwrap();
+                sys.refresh_cpu_usage();
+                sys.refresh_memory();
+
+                let mut metrics = HashMap::new();
+                metrics.insert("cpu_usage".to_string(), sys.global_cpu_usage() as f64);
+                metrics.insert("total_mem".to_string(), sys.total_memory() as f64);
+                metrics.insert("used_mem".to_string(), sys.used_memory() as f64);
+                metrics
             })).unwrap();
         });
 
@@ -190,7 +204,8 @@ mod tests {
     #[test]
     fn test_js_node_creation_performance() {
         let (tx, rx) = mpsc::channel();
-        let runtime = JsRuntime::new(tx);
+        let fps = Arc::new(AtomicU32::new(60));
+        let runtime = JsRuntime::new(tx, fps);
 
         let counts = [100, 500, 1000];
         for count in counts {

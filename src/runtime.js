@@ -30,6 +30,9 @@ const NativeUI = {
     getPerformanceStats: () => {
         return _native_get_perf_stats();
     },
+    getSystemMetrics: () => {
+        return _native_get_system_metrics();
+    },
     healthCheck: () => {
         _native_health_check();
     },
@@ -92,19 +95,32 @@ function runAutonomousMaintenance() {
 
     const meta = NativeUI.getMetadata();
     const stats = NativeUI.getPerformanceStats();
-    console.log(`Scheduler: Active on version ${meta.version} | Stats: FPS=${stats.fps}`);
+    const sys = NativeUI.getSystemMetrics();
+    console.log(`Scheduler: Active on version ${meta.version} | Stats: FPS=${stats.fps} | CPU: ${sys.cpu_usage.toFixed(1)}%`);
 
     if (stats.fps < 10) {
         console.warn("Scheduler: Performance drop detected. Capturing diagnostic screenshot...");
         NativeUI.screenshot("perf_diag.png");
     }
 
-    // Dynamic Auto-Scaling Trigger
-    if (stats.fps > 55) {
-        NativeUI.scaleResources(500, 1000, 200);
-    } else if (stats.fps < 30) {
-        NativeUI.scaleResources(50, 100, 20);
+    // System-Aware Dynamic Auto-Scaling Trigger
+    let batchSize = 100;
+    let textThreshold = 200;
+    let textureThreshold = 50;
+
+    if (stats.fps > 55 && sys.cpu_usage < 70) {
+        // High headroom: Scale UP
+        batchSize = 500;
+        textThreshold = 1000;
+        textureThreshold = 200;
+    } else if (stats.fps < 30 || sys.cpu_usage > 90) {
+        // High pressure: Scale DOWN
+        batchSize = 50;
+        textThreshold = 100;
+        textureThreshold = 20;
     }
+
+    NativeUI.scaleResources(batchSize, textThreshold, textureThreshold);
 }
 
 setInterval(runAutonomousMaintenance, SCHEDULER_INTERVAL);

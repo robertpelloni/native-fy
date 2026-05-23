@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [0.31.0] - 2026-05-23
+- Integrated `sysinfo` for native host resource introspection.
+- Implemented System-Aware Auto-Scaling logic in the autonomous scheduler.
+- Added `NativeUI.getSystemMetrics()` to the JS bridge.
+- Conducted comprehensive Deployment Readiness Performance Audit.
+
 ## [0.30.0] - 2026-05-23
 - Implemented Dynamic Resource Auto-Scaling module in the core engine.
 - Added `ScaleResources` command to dynamically adjust command batch sizes and cache thresholds.
