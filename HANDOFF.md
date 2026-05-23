@@ -1,21 +1,20 @@
-# HANDOFF: Session Summary (v0.13.0)
+# HANDOFF: Session Summary (v0.15.0)
 
 ## Summary of Work
-- **Monitoring & Logging:** Added timestamped logging to `app.log` and a custom panic hook in `main.rs`.
-- **Instrumentation:** Implemented frame-rate and layout timing logs.
-- **Stability Scripts:** Created `scripts/monitor.js` to track application health.
-- **Documentation:** Synchronized all project documentation (`VISION.md`, `MEMORY.md`, `DEPLOY.md`, `IDEAS.md`, `ROADMAP.md`, `TODO.md`, `CHANGELOG.md`) to version 0.13.0.
+- **Performance Overlay:** Implemented a live debug bar in `src/main.rs` showing FPS, Layout Time, Node Count, and Version.
+- **Networking:** Integrated `reqwest` and implemented a `fetch` polyfill in QuickJS (`src/runtime.rs`, `src/runtime.js`).
+- **Automation:** Finalized the `pipeline` and `protocol-sync` scripts.
+- **Documentation:** Updated all metadata and vision files to reflect the completion of the Phase 3 milestones.
 
 ## Structural Shifts
-- Shifted from manual debugging to automated monitoring via `app.log`.
-- Formalized the `VERSION.md` source of truth.
+- The engine now has a resident debug overlay that confirms the "Active" status of the autonomous protocol.
+- JS logic can now natively request external data, enabling dynamic application content.
 
 ## Unobvious Findings
-- `winit` v0.30's `ApplicationHandler` is strictly required for modern event loop management.
-- Headless panics are common when windowing is requested without a display server; the new panic hook captures these gracefully.
+- Wgpu surface management and Glyphon text areas require careful ordering to satisfy the Rust borrow checker when rendering multiple passes (quads then text).
+- Headless environments correctly trigger the panic hook, allowing remote agents to diagnose "No Display" errors via `app.log`.
 
 ## For the Successor
-- The next major milestone is the **Network & Asset Phase**.
-- Focus on the `fetch` polyfill in `src/runtime.rs`.
-- The `UiCommand` enum needs an `UpdateImage` variant once the image loader is ready.
-- Check `PERFORMANCE.md` for current bottleneck analysis.
+- Phase 4 (Component Library) is the next focus.
+- The `UiCommand` enum should be expanded to support `UpdateImage` once the asset cache is implemented.
+- Check `TODO.md` for the dynamic storage buffer resizing task.

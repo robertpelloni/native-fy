@@ -12,6 +12,14 @@ const NativeUI = {
             _eventListeners[type] = [];
         }
         _eventListeners[type].push(callback);
+    },
+    fetch: async (url) => {
+        // Synchronous bridge call wrapped in an async JS interface
+        const text = _native_fetch(url);
+        return {
+            text: async () => text,
+            json: async () => JSON.parse(text)
+        };
     }
 };
 

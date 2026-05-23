@@ -15,8 +15,9 @@
 - [x] QuickJS runtime integration
 - [x] Event bridging (Clicks, Cursor)
 - [x] Performance instrumentation
-- [x] **Autonomous Execution Protocol & Pipeline Automation**
-- [ ] Asset management & Networking (`fetch`)
+- [x] Autonomous Execution Protocol & Pipeline Automation
+- [x] **Asset management & Networking (`fetch`)**
+- [x] **Performance Overlay & Live Debugging**
 
 ## Phase 4: Component Library & Polish (v0.16.0 - v0.20.0)
 - [ ] Standard UI components (Inputs, Buttons, Lists)

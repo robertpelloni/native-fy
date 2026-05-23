@@ -16,6 +16,10 @@ PHASE 3: THE COMPILER & SELF-HEALING ENGINE
 - CRITICAL: Wrap this invocation in a shell execution loop that runs `cargo check` and `cargo test` inside your current cloud VM environment.
 - If `cargo` returns a non-zero exit status, capture the stdout/stderr compiler traces, format them into a remediation prompt, feed them back to the model, and recursively patch the source files until the project builds successfully.
 
+PHASE 4: UI PROTOCOL & DEBUG OVERLAY
+- Ensure every generated UI includes a placeholder or "status" area if needed, though the primary engine now handles a native debug overlay.
+- Generated code must focus on mapping the input AST to `engine.build_tree()` calls.
+
 Deliverables:
 - Fully implemented scripts/web_scraper.js
 - Fully implemented src/layout.rs with structural mapping

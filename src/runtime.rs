@@ -48,6 +48,16 @@ impl JsRuntime {
             globals.set("_native_set_style", Function::new(ctx.clone(), |_node_id: u32, _styles: rquickjs::Object| {
                 // println!("Native: Setting style for node {}", _node_id);
             })).unwrap();
+
+            globals.set("_native_fetch", Function::new(ctx.clone(), |url: String| {
+                match reqwest::blocking::get(&url) {
+                    Ok(resp) => {
+                        let text = resp.text().unwrap_or_default();
+                        text
+                    }
+                    Err(e) => format!("Error: {:?}", e),
+                }
+            })).unwrap();
         });
 
         Self {

@@ -3,7 +3,7 @@ mod ui_gen;
 mod runtime;
 
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Instant, Duration};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -23,6 +23,12 @@ use glyphon::{
 
 const MAX_NODES: usize = 1024;
 const LOG_FILE: &str = "app.log";
+
+struct AppStats {
+    fps: u32,
+    layout_time: Duration,
+    node_count: usize,
+}
 
 fn log_error(msg: &str) {
     let mut file = OpenOptions::new()
@@ -373,7 +379,7 @@ impl RenderState {
         }
     }
 
-    fn render(&mut self, engine: &LayoutEngine, root_id: taffy::prelude::NodeId) -> Result<(), wgpu::SurfaceError> {
+    fn render(&mut self, engine: &LayoutEngine, root_id: taffy::prelude::NodeId, stats: &AppStats) -> Result<(), wgpu::SurfaceError> {
         let render_start = Instant::now();
 
         let output = self.surface.get_current_texture()?;
@@ -407,6 +413,18 @@ impl RenderState {
         // Prepare text areas
         let mut text_areas = Vec::new();
         let mut buffers = Vec::new(); // Keep buffers alive
+
+        // Overlay Stats
+        let stats_text = format!(
+            "v0.15.0 | FPS: {} | Layout: {:?} | Nodes: {} | Protocol: ACTIVE",
+            stats.fps, stats.layout_time, stats.node_count
+        );
+        let mut stats_buffer = glyphon::Buffer::new(&mut self.font_system, Metrics::new(12.0, 16.0));
+        stats_buffer.set_size(&mut self.font_system, Some(self.size.width as f32), Some(20.0));
+        stats_buffer.set_text(&mut self.font_system, &stats_text, glyphon::Attrs::new().family(Family::Monospace).color(glyphon::Color::rgb(0, 255, 0)), Shaping::Advanced);
+        stats_buffer.shape_until_scroll(&mut self.font_system, false);
+        buffers.push(stats_buffer);
+
         for (text, _x, _y, width, height) in &text_data {
             let mut buffer = glyphon::Buffer::new(&mut self.font_system, Metrics::new(16.0, 20.0));
             buffer.set_size(&mut self.font_system, Some(*width), Some(*height));
@@ -415,9 +433,24 @@ impl RenderState {
             buffers.push(buffer);
         }
 
+        text_areas.push(TextArea {
+            buffer: &buffers[0],
+            left: 10.0,
+            top: 10.0,
+            scale: 1.0,
+            bounds: TextBounds {
+                left: 0,
+                top: 0,
+                right: self.size.width as i32,
+                bottom: self.size.height as i32,
+            },
+            default_color: glyphon::Color::rgb(0, 255, 0),
+            custom_glyphs: &[],
+        });
+
         for (i, (_, x, y, _, _)) in text_data.iter().enumerate() {
             text_areas.push(TextArea {
-                buffer: &buffers[i],
+                buffer: &buffers[i + 1],
                 left: *x,
                 top: *y,
                 scale: 1.0,
@@ -529,6 +562,10 @@ struct NativefyApp {
     mouse_pos: [f32; 2],
     ui_rx: Receiver<UiCommand>,
     ui_tx: Sender<UiCommand>,
+    last_frame: Instant,
+    fps: u32,
+    frame_count: u32,
+    last_fps_update: Instant,
 }
 
 impl Default for NativefyApp {
@@ -543,6 +580,10 @@ impl Default for NativefyApp {
             mouse_pos: [0.0; 2],
             ui_rx,
             ui_tx,
+            last_frame: Instant::now(),
+            fps: 0,
+            frame_count: 0,
+            last_fps_update: Instant::now(),
         }
     }
 }
@@ -606,6 +647,15 @@ impl ApplicationHandler for NativefyApp {
                 }
             }
             WindowEvent::RedrawRequested => {
+                // Update FPS
+                self.frame_count += 1;
+                let now = Instant::now();
+                if now.duration_since(self.last_fps_update) >= Duration::from_secs(1) {
+                    self.fps = self.frame_count;
+                    self.frame_count = 0;
+                    self.last_fps_update = now;
+                }
+
                 // Process UI commands
                 let mut recompute = false;
                 while let Ok(cmd) = self.ui_rx.try_recv() {
@@ -636,14 +686,22 @@ impl ApplicationHandler for NativefyApp {
                     }
                 }
 
+                let mut layout_duration = Duration::from_micros(0);
                 if recompute {
                     if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
+                        let start = Instant::now();
                         let _ = engine.compute(root_id);
+                        layout_duration = start.elapsed();
                     }
                 }
 
                 if let (Some(state), Some(engine), Some(root_id)) = (self.render_state.as_mut(), self.layout_engine.as_ref(), self.root_id) {
-                    match state.render(engine, root_id) {
+                    let stats = AppStats {
+                        fps: self.fps,
+                        layout_time: layout_duration,
+                        node_count: engine.node_count(),
+                    };
+                    match state.render(engine, root_id, &stats) {
                         Ok(_) => {}
                         Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => state.resize(state.size),
                         Err(e) => log_error(&format!("Render error: {:?}", e)),

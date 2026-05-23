@@ -216,4 +216,8 @@ impl LayoutEngine {
     pub fn get_type(&self, id: NodeId) -> Option<&String> {
         self.node_types.get(&id)
     }
+
+    pub fn node_count(&self) -> usize {
+        self.taffy.total_node_count()
+    }
 }
