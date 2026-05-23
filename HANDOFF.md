@@ -1,20 +1,20 @@
-# HANDOFF: Session Summary (v0.26.0)
+# HANDOFF: Session Summary (v0.27.0)
 
 ## Summary of Work
-- **Runtime Dashboard Toggle:** Implemented `NativeUI.toggleDashboard()` in the JS bridge and added a stateful `dashboard_active` toggle in the main engine loop.
-- **Performance Visualization:** Enhanced the Native Monitoring Dashboard with real-time performance history graphs. The engine now collects AppStats every 10 frames and renders them as bar graphs for FPS and Layout Latency.
-- **Rendering Integration:** Unified the dashboard rendering path with the high-performance `glyphon` text engine, providing clear metadata overlays during monitoring.
-- **Documentation:** Synchronized all strategic files and versioning to 0.26.0.
+- **Core Integration Testing:** Implemented `scripts/integration_test.js` which verifies the consistency of the bridge interface (methods across JS/Rust) and critical rendering logic (texture batching).
+- **Lifecycle Orchestration:** Unified the entire development flow into a mandatory orchestration stage within `scripts/e2e_test.js`. The system now explicitly validates core-system interaction before benchmarking.
+- **Bug Fixes:** Resolved a method-naming mismatch in the bridge validator between `getPerformanceStats` and `_native_get_perf_stats`.
+- **Pipeline Expansion:** Formally added `test:integration` to the unified `npm run pipeline`.
 
 ## Structural Shifts
-- The dashboard is no longer just a startup mode; it is a live-switchable rendering state that can be toggled via JavaScript.
-- Performance history is persistently tracked in the application state, enabling trend analysis without external tools.
+- The "Autonomous Execution Protocol" now includes a structural validation layer, moving beyond just "health" and "benchmarks" to "interface integrity."
+- Core rendering algorithms (like batching) are now monitored as structural requirements in the testing suite.
 
 ## Unobvious Findings
-- Redrawing the dashboard overlay during `render_dashboard` required a separate text preparation pass to avoid interfering with the application's primary UI text buffers.
-- Using simple instanced quads for bar graphs is highly efficient and demonstrates the engine's ability to handle high-frequency UI updates.
+- Bridge validation can be performed statically by analyzing source files (`src/runtime.js` vs `src/runtime.rs`), providing immediate feedback without requiring a full GPU-enabled execution.
+- Automating the "method mapping" check (CamelCase to snake_case) is a reliable way to catch bridge drift before it hits production.
 
 ## For the Successor
-- Phase 5 expansion continues.
-- Next focuses: **SVG support** and **language bindings**.
-- The `perf_history` vector in `NativefyApp` is currently limited to 100 entries; consider making this configurable.
+- Interface integrity is high.
+- Next major milestones: **SVG support** and **language bindings**.
+- The `perf_history` in `NativefyApp` should eventually be exposed via the bridge for external dashboarding.

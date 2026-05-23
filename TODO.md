@@ -52,7 +52,8 @@
 43. [DONE] Implement Continuous Health Watchdog (`health_monitor.js`).
 44. [DONE] Implement Full End-to-End lifecycle validation (`e2e_test.js`).
 45. [DONE] Implement Automated Visual Regression testing suite.
+46. [DONE] Implement Core-System Integration testing suite (`integration_test.js`).
 
 ## Polish & Tooling
-46. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
-47. [DONE] Add `nativefy` convenience script to `package.json`.
+47. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
+48. [DONE] Add `nativefy` convenience script to `package.json`.

@@ -27,6 +27,7 @@ function runE2E() {
     }
 
     runStage("Build Release", "cargo build --release");
+    runStage("Core Integration", "npm run test:integration");
     runStage("Performance Benchmark", "npm run benchmark");
 
     console.log("\n--- [Stage] Autonomous Self-Check ---");
