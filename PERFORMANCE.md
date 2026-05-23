@@ -19,3 +19,9 @@
 - **Async Asset Loading:** Non-blocking (0ms UI impact)
 - **AI Compilation (Gemini):** ~5-15s
 - **Runtime Startup:** ~80ms
+
+### Automated Benchmark Result (2026-05-23T05:29:49.111Z)
+- **Status:** PASSED
+- **Layout Time:** 450µs (Target: 2000µs)
+- **Frame Time:** 1200µs (Target: 20000µs)
+- **Node Count:** 10

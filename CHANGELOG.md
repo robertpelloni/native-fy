@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [0.22.0] - 2026-05-23
+- Implemented Full Automated E2E Lifecycle validation (`scripts/e2e_test.js`).
+- Integrated `PROD_MODE` to silence debug overlays for clean production deployment.
+- Enhanced `BENCHMARK_MODE` for immediate metric export in headless environments.
+- Formally established the "start" and "test:e2e" production scripts in `package.json`.
+
 ## [0.21.0] - 2026-05-23
 - Implemented Native Monitoring Dashboard mode (`DASHBOARD_MODE`).
 - Integrated automated runtime health checks and heartbeat mechanisms.

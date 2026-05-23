@@ -475,14 +475,16 @@ impl RenderState {
         let mut text_areas = Vec::new();
 
         // Dashboard or Overlay Stats
-        let stats_text = if std::env::var("DASHBOARD_MODE").is_ok() {
+        let stats_text = if std::env::var("PROD_MODE").is_ok() {
+            String::new()
+        } else if std::env::var("DASHBOARD_MODE").is_ok() {
             format!(
-                "MONITORING DASHBOARD | v0.21.0 | Status: HEALTHY | FPS: {} | Layout: {}µs | Nodes: {}",
+                "MONITORING DASHBOARD | v0.22.0 | Status: HEALTHY | FPS: {} | Layout: {}µs | Nodes: {}",
                 stats.fps, stats.layout_time_micros, stats.node_count
             )
         } else {
             format!(
-                "v0.21.0 | FPS: {} | Layout: {}µs | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
+                "v0.22.0 | FPS: {} | Layout: {}µs | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
                 stats.fps, stats.layout_time_micros, stats.node_count
             )
         };
@@ -494,10 +496,11 @@ impl RenderState {
         stats_buffer.set_text(&mut self.font_system, &stats_text, glyphon::Attrs::new().family(Family::Monospace).color(glyphon::Color::rgb(0, 255, 0)), Shaping::Advanced);
         stats_buffer.shape_until_scroll(&mut self.font_system, false);
 
-        text_areas.push(TextArea {
-            buffer: stats_buffer,
-            left: 10.0,
-            top: 10.0,
+        if !stats_text.is_empty() {
+            text_areas.push(TextArea {
+                buffer: stats_buffer,
+                left: 10.0,
+                top: 10.0,
             scale: 1.0,
             bounds: TextBounds {
                 left: 0,
@@ -505,9 +508,10 @@ impl RenderState {
                 right: self.size.width as i32,
                 bottom: self.size.height as i32,
             },
-            default_color: glyphon::Color::rgb(0, 255, 0),
-            custom_glyphs: &[],
-        });
+                default_color: glyphon::Color::rgb(0, 255, 0),
+                custom_glyphs: &[],
+            });
+        }
 
         for (id, _, x, y, _, _) in &text_data {
             if let Some(buffer) = self.text_buffers.get(id) {
@@ -828,7 +832,7 @@ impl ApplicationHandler for NativefyApp {
                     }
 
                     // Benchmark export trigger
-                    if std::env::var("BENCHMARK_MODE").is_ok() && self.frame_count >= 100 {
+                    if std::env::var("BENCHMARK_MODE").is_ok() {
                          let json = serde_json::to_string_pretty(&stats).unwrap();
                          std::fs::write("perf_metrics.json", json).unwrap();
                          println!("Benchmark: Exported metrics to perf_metrics.json");
