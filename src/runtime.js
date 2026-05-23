@@ -27,6 +27,9 @@ const NativeUI = {
     getMetadata: () => {
         return _native_get_metadata();
     },
+    healthCheck: () => {
+        _native_health_check();
+    },
     Components: {
         Button: (text, onClick, styles = {}) => {
             // Use native button implementation for better efficiency

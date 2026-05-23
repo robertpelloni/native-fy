@@ -17,6 +17,7 @@ pub enum UiCommand {
         data: Vec<u8>,
     },
     SyncProtocol,
+    HealthCheck,
 }
 
 pub struct JsRuntime {
@@ -91,6 +92,11 @@ impl JsRuntime {
                     }
                 }
                 let _ = tx_btn.send(UiCommand::CreateNativeButton { text, styles });
+            })).unwrap();
+
+            let tx_health = tx.clone();
+            globals.set("_native_health_check", Function::new(ctx.clone(), move || {
+                let _ = tx_health.send(UiCommand::HealthCheck);
             })).unwrap();
 
             globals.set("_native_get_metadata", Function::new(ctx.clone(), || {

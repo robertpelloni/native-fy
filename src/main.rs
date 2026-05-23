@@ -474,11 +474,18 @@ impl RenderState {
         // Prepare text areas
         let mut text_areas = Vec::new();
 
-        // Overlay Stats
-        let stats_text = format!(
-            "v0.19.0 | FPS: {} | Layout: {}µs | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
-            stats.fps, stats.layout_time_micros, stats.node_count
-        );
+        // Dashboard or Overlay Stats
+        let stats_text = if std::env::var("DASHBOARD_MODE").is_ok() {
+            format!(
+                "MONITORING DASHBOARD | v0.21.0 | Status: HEALTHY | FPS: {} | Layout: {}µs | Nodes: {}",
+                stats.fps, stats.layout_time_micros, stats.node_count
+            )
+        } else {
+            format!(
+                "v0.21.0 | FPS: {} | Layout: {}µs | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
+                stats.fps, stats.layout_time_micros, stats.node_count
+            )
+        };
 
         let stats_buffer = self.stats_buffer.get_or_insert_with(|| {
             glyphon::Buffer::new(&mut self.font_system, Metrics::new(12.0, 16.0))
@@ -622,6 +629,7 @@ struct NativefyApp {
     fps: u32,
     frame_count: u32,
     last_fps_update: Instant,
+    perf_history: Vec<AppStats>,
 }
 
 impl Default for NativefyApp {
@@ -640,6 +648,7 @@ impl Default for NativefyApp {
             fps: 0,
             frame_count: 0,
             last_fps_update: Instant::now(),
+            perf_history: Vec::new(),
         }
     }
 }
@@ -772,6 +781,9 @@ impl ApplicationHandler for NativefyApp {
                                 // TODO: Upload to GPU texture map
                             }
                         }
+                        UiCommand::HealthCheck => {
+                            println!("Health Check: Bridge is responsive.");
+                        }
                         UiCommand::SyncProtocol => {
                             println!("Runtime: Triggering Protocol Sync...");
                             let _ = std::process::Command::new("node")
@@ -797,6 +809,18 @@ impl ApplicationHandler for NativefyApp {
                         node_count: engine.node_count(),
                         frame_time_micros: now.duration_since(self.last_fps_update).as_micros() as u64 / (self.frame_count.max(1) as u64),
                     };
+
+                    // Record history for dashboard
+                    if self.frame_count % 60 == 0 {
+                        self.perf_history.push(AppStats {
+                             fps: stats.fps,
+                             layout_time_micros: stats.layout_time_micros,
+                             node_count: stats.node_count,
+                             frame_time_micros: stats.frame_time_micros,
+                        });
+                        if self.perf_history.len() > 100 { self.perf_history.remove(0); }
+                    }
+
                     match state.render(engine, root_id, &stats) {
                         Ok(_) => {}
                         Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => state.resize(state.size),

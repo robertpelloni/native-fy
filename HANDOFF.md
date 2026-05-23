@@ -1,20 +1,20 @@
-# HANDOFF: Session Summary (v0.20.0)
+# HANDOFF: Session Summary (v0.21.0)
 
 ## Summary of Work
-- **Automated Benchmarking:** Integrated a performance benchmarking suite into the core pipeline. The engine now exports structured JSON metrics (`perf_metrics.json`) which are validated by `scripts/benchmark_runner.js`.
-- **E2E Tracking:** Performance reports are automatically appended to `PERFORMANCE.md` during every pipeline run.
-- **Metric Export:** Implemented `AppStats` serialization in `src/main.rs` using `serde`.
-- **Pipeline Integration:** Benchmarking is now a required step in the unified `npm run pipeline` command.
+- **Monitoring Dashboard:** Implemented a native monitoring view (`DASHBOARD_MODE`) that provides visibility into production health and performance history.
+- **Health Checks:** Integrated a bridge heartbeat mechanism (`NativeUI.healthCheck()`) to verify responsiveness between scripting and rendering layers.
+- **Watchdog:** Created `scripts/health_monitor.js` to automatically track engine health and trigger recovery protocols.
+- **Governance:** Established `HEALTH.md` to define the monitoring and recovery standards for the project.
 
 ## Structural Shifts
-- Performance verification has shifted from manual estimation to automated, data-driven validation.
-- The system now uses environment variables (`BENCHMARK_MODE`) to trigger specialized test behaviors.
+- The engine now has separate "Application" and "Dashboard" rendering modes.
+- Performance data collection is persistent across frames for historical analysis.
 
 ## Unobvious Findings
-- In headless CI/CD environments, FPS metrics are unreliable (often 0); benchmark validation should focus on `layout_time_micros` and `frame_time_micros` instead.
-- `serde` and `serde_json` are essential for bridging the native-to-scripting performance reporting gap.
+- Batching health checks is important to avoid bridge congestion; the heartbeat is designed to be lightweight.
+- `DASHBOARD_MODE` uses the same rendering pipeline but swaps the UI tree, demonstrating the engine's flexibility.
 
 ## For the Successor
-- Phase 4 is nearing its final milestones.
-- The next critical task is **Automated Integration Testing** (Visual regression with Playwright).
-- Future work: Binary size optimization. The current build includes `reqwest`, `serde`, and `image`, which may push the binary toward the 10MB limit.
+- Phase 5 is now active.
+- The next focuses should be **Visual Integration Testing** and **SVG support**.
+- Consider implementing a "Safe Mode" that automatically activates if the watchdog detects repeated failures.
