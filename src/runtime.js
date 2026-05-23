@@ -29,16 +29,10 @@ const NativeUI = {
     },
     Components: {
         Button: (text, onClick, styles = {}) => {
-            const id = NativeUI.createNode("Box", {
-                padding: "10px 20px",
-                margin: "5px",
-                justifyContent: "center",
-                alignItems: "center",
-                ...styles
-            }, text);
+            // Use native button implementation for better efficiency
+            const id = _native_create_button(text, styles);
             if (onClick) {
                 NativeUI.addEventListener("click", (data) => {
-                    // Basic hit detection placeholder
                     onClick(data);
                 });
             }

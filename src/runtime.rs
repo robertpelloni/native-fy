@@ -8,6 +8,14 @@ pub enum UiCommand {
         styles: HashMap<String, String>,
         text: Option<String>,
     },
+    CreateNativeButton {
+        text: String,
+        styles: HashMap<String, String>,
+    },
+    UpdateImage {
+        url: String,
+        data: Vec<u8>,
+    },
     SyncProtocol,
 }
 
@@ -50,19 +58,39 @@ impl JsRuntime {
                 // println!("Native: Setting style for node {}", _node_id);
             })).unwrap();
 
-            globals.set("_native_fetch", Function::new(ctx.clone(), |url: String| {
-                match reqwest::blocking::get(&url) {
-                    Ok(resp) => {
-                        let text = resp.text().unwrap_or_default();
-                        text
+            let tx_fetch = tx.clone();
+            globals.set("_native_fetch", Function::new(ctx.clone(), move |url: String| {
+                let tx = tx_fetch.clone();
+                let url_clone = url.clone();
+                std::thread::spawn(move || {
+                    if let Ok(resp) = reqwest::blocking::get(&url_clone) {
+                        if let Ok(bytes) = resp.bytes() {
+                            let _ = tx.send(UiCommand::UpdateImage {
+                                url: url_clone,
+                                data: bytes.to_vec(),
+                            });
+                        }
                     }
-                    Err(e) => format!("Error: {:?}", e),
-                }
+                });
+                "Asset loading started...".to_string()
             })).unwrap();
 
             let tx_sync = tx.clone();
             globals.set("_native_sync_protocol", Function::new(ctx.clone(), move || {
                 let _ = tx_sync.send(UiCommand::SyncProtocol);
+            })).unwrap();
+
+            let tx_btn = tx.clone();
+            globals.set("_native_create_button", Function::new(ctx.clone(), move |text: String, _styles: rquickjs::Object| {
+                let mut styles = HashMap::new();
+                for key_res in _styles.keys::<String>() {
+                    if let Ok(key) = key_res {
+                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                            styles.insert(key, val);
+                        }
+                    }
+                }
+                let _ = tx_btn.send(UiCommand::CreateNativeButton { text, styles });
             })).unwrap();
 
             globals.set("_native_get_metadata", Function::new(ctx.clone(), || {

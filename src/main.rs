@@ -474,7 +474,7 @@ impl RenderState {
 
         // Overlay Stats
         let stats_text = format!(
-            "v0.18.0 | FPS: {} | Layout: {:?} | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
+            "v0.19.0 | FPS: {} | Layout: {:?} | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
             stats.fps, stats.layout_time, stats.node_count
         );
 
@@ -710,9 +710,12 @@ impl ApplicationHandler for NativefyApp {
                     self.last_fps_update = now;
                 }
 
-                // Process UI commands
+                // Process UI commands in batch
                 let mut recompute = false;
+                let mut command_count = 0;
                 while let Ok(cmd) = self.ui_rx.try_recv() {
+                    command_count += 1;
+                    if command_count > 100 { break; } // Safety break
                     match cmd {
                         UiCommand::CreateNode { node_type, styles, text } => {
                             if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
@@ -735,6 +738,36 @@ impl ApplicationHandler for NativefyApp {
                                     let _ = engine.add_child(root_id, new_id);
                                 }
                                 recompute = true;
+                            }
+                        }
+                        UiCommand::CreateNativeButton { text, styles } => {
+                            if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
+                                let new_node = Node {
+                                    node_type: "Box".to_string(), // Native button is a box with text
+                                    rect: AstRect { x: 0.0, y: 0.0, width: 100.0, height: 40.0 }, // Pre-defined button size
+                                    styles: FlexStyles {
+                                        flex_direction: "row".to_string(),
+                                        padding: styles.get("padding").cloned().unwrap_or("10px 20px".to_string()),
+                                        margin: styles.get("margin").cloned().unwrap_or("5px".to_string()),
+                                        align_items: "center".to_string(),
+                                        justify_content: "center".to_string(),
+                                        unsupported: std::collections::HashMap::new(),
+                                    },
+                                    text: Some(text),
+                                    value: None,
+                                    children: vec![],
+                                };
+                                if let Ok(new_id) = engine.build_tree(&new_node) {
+                                    let _ = engine.add_child(root_id, new_id);
+                                }
+                                recompute = true;
+                            }
+                        }
+                        UiCommand::UpdateImage { url, data } => {
+                            println!("Runtime: Loading image asset from {}", url);
+                            if let Ok(img) = image::load_from_memory(&data) {
+                                let _rgba = img.to_rgba8();
+                                // TODO: Upload to GPU texture map
                             }
                         }
                         UiCommand::SyncProtocol => {

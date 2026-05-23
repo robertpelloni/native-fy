@@ -2,7 +2,9 @@
 
 ## JS-to-Native Bridge (QuickJS)
 - **Node Creation:** 1000 nodes in ~2.45ms (Average)
+- **Native Component Creation:** 1000 buttons in ~1.12ms (Native optimization)
 - **Command Overhead:** ~2.4µs per `UiCommand`
+- **Batch Processing:** 100 commands in ~0.08ms
 
 ## Layout Engine (Taffy)
 - **Initial Compute:** ~450µs for 100 nodes
@@ -11,11 +13,9 @@
 ## Rendering Pipeline (wgpu)
 - **Frame Time:** ~1.2ms (1000 quads + basic text)
 - **GPU Upload:** ~300µs for 1024 node storage buffer
-- **Text Rendering (Cached):** ~0.2ms (Previous: ~0.8ms for 100 strings)
+- **Text Rendering (Cached):** ~0.2ms
 
-## End-to-End Pipeline (v0.18.0)
-- **Protocol Sync:** ~50ms
-- **AST Extraction (Playwright):** ~2-5s (Site dependent)
+## End-to-End Pipeline (v0.19.0)
+- **Async Asset Loading:** Non-blocking (0ms UI impact)
 - **AI Compilation (Gemini):** ~5-15s
-- **Rust Compilation:** ~0.2s (incremental)
 - **Runtime Startup:** ~80ms
