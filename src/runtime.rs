@@ -19,6 +19,7 @@ pub enum UiCommand {
     SyncProtocol,
     HealthCheck,
     Reload,
+    RunPipeline,
 }
 
 pub struct JsRuntime {
@@ -103,6 +104,11 @@ impl JsRuntime {
             let tx_reload = tx.clone();
             globals.set("_native_reload", Function::new(ctx.clone(), move || {
                 let _ = tx_reload.send(UiCommand::Reload);
+            })).unwrap();
+
+            let tx_pipe = tx.clone();
+            globals.set("_native_run_pipeline", Function::new(ctx.clone(), move || {
+                let _ = tx_pipe.send(UiCommand::RunPipeline);
             })).unwrap();
 
             globals.set("_native_get_metadata", Function::new(ctx.clone(), || {

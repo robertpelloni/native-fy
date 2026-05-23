@@ -482,12 +482,12 @@ impl RenderState {
             String::new()
         } else if std::env::var("DASHBOARD_MODE").is_ok() {
             format!(
-                "MONITORING DASHBOARD | v0.22.0 | Status: HEALTHY | FPS: {} | Layout: {}µs | Nodes: {}",
+                "MONITORING DASHBOARD | v0.24.0 | Status: HEALTHY | FPS: {} | Layout: {}µs | Nodes: {}",
                 stats.fps, stats.layout_time_micros, stats.node_count
             )
         } else {
             format!(
-                "v0.22.0 | FPS: {} | Layout: {}µs | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
+                "v0.24.0 | FPS: {} | Layout: {}µs | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
                 stats.fps, stats.layout_time_micros, stats.node_count
             )
         };
@@ -761,9 +761,11 @@ impl ApplicationHandler for NativefyApp {
                     match cmd {
                         UiCommand::CreateNode { node_type, styles, text } => {
                             if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
+                                let width = styles.get("width").and_then(|v| v.strip_suffix("px")).and_then(|v| v.parse().ok()).unwrap_or(100.0);
+                                let height = styles.get("height").and_then(|v| v.strip_suffix("px")).and_then(|v| v.parse().ok()).unwrap_or(100.0);
                                 let new_node = Node {
                                     node_type,
-                                    rect: AstRect { x: 0.0, y: 0.0, width: 100.0, height: 100.0 }, // Default size
+                                    rect: AstRect { x: 0.0, y: 0.0, width, height },
                                     styles: FlexStyles {
                                         flex_direction: styles.get("flexDirection").cloned().unwrap_or("row".to_string()),
                                         padding: styles.get("padding").cloned().unwrap_or("0px".to_string()),
@@ -892,6 +894,13 @@ impl ApplicationHandler for NativefyApp {
                                 let _ = engine.compute(root_id);
                                 recompute = true;
                             }
+                        }
+                        UiCommand::RunPipeline => {
+                            println!("Runtime: Triggering Full Pipeline...");
+                            let _ = std::process::Command::new("npm")
+                                .arg("run")
+                                .arg("pipeline")
+                                .status();
                         }
                         UiCommand::SyncProtocol => {
                             println!("Runtime: Triggering Protocol Sync...");

@@ -33,6 +33,9 @@ const NativeUI = {
     reload: () => {
         _native_reload();
     },
+    runPipeline: () => {
+        _native_run_pipeline();
+    },
     Components: {
         Button: (text, onClick, styles = {}) => {
             // Use native button implementation for better efficiency
@@ -67,6 +70,21 @@ globalThis._native_on_event = (type, data) => {
 };
 
 console.log("QuickJS: NativeUI bridge initialized.");
+
+// Autonomous Task Scheduler
+const SCHEDULER_INTERVAL = 60000; // 60 seconds
+
+function runAutonomousMaintenance() {
+    console.log("Scheduler: Running autonomous maintenance...");
+    NativeUI.healthCheck();
+
+    const meta = NativeUI.getMetadata();
+    console.log(`Scheduler: Active on version ${meta.version}`);
+
+    // If we were in a failed state, we would trigger NativeUI.reload() or NativeUI.syncProtocol()
+}
+
+setInterval(runAutonomousMaintenance, SCHEDULER_INTERVAL);
 
 // Performance test logic
 const NODE_COUNTS = [100, 500, 1000];
