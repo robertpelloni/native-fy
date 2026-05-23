@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [0.30.0] - 2026-05-23
+- Implemented Dynamic Resource Auto-Scaling module in the core engine.
+- Added `ScaleResources` command to dynamically adjust command batch sizes and cache thresholds.
+- Enhanced the Autonomous Scheduler (JS) and Health Monitor with scaling intelligence.
+- Wired `NativeUI.scaleResources` bridge for runtime resource orchestration.
+
 ## [0.29.0] - 2026-05-23
 - Implemented functional WGPU-to-CPU buffer mapping for high-fidelity screenshots.
 - Refactored texture and text buffer caches to use an LRU eviction strategy for improved memory stability.

@@ -22,6 +22,11 @@ pub enum UiCommand {
     RunPipeline,
     Screenshot { path: String },
     ToggleDashboard,
+    ScaleResources {
+        batch_size: u32,
+        text_eviction_threshold: usize,
+        texture_eviction_threshold: usize,
+    },
 }
 
 pub struct JsRuntime {
@@ -121,6 +126,15 @@ impl JsRuntime {
             let tx_dash = tx.clone();
             globals.set("_native_toggle_dashboard", Function::new(ctx.clone(), move || {
                 let _ = tx_dash.send(UiCommand::ToggleDashboard);
+            })).unwrap();
+
+            let tx_scale = tx.clone();
+            globals.set("_native_scale_resources", Function::new(ctx.clone(), move |batch_size: u32, text_threshold: usize, texture_threshold: usize| {
+                let _ = tx_scale.send(UiCommand::ScaleResources {
+                    batch_size,
+                    text_eviction_threshold: text_threshold,
+                    texture_eviction_threshold: texture_threshold,
+                });
             })).unwrap();
 
             globals.set("_native_get_metadata", Function::new(ctx.clone(), || {

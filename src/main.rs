@@ -119,10 +119,12 @@ struct RenderState {
     text_renderer: TextRenderer,
     text_buffers: HashMap<taffy::prelude::NodeId, (glyphon::Buffer, Instant)>,
     stats_buffer: Option<glyphon::Buffer>,
+    text_eviction_threshold: usize,
 
     // Textures
     textures: HashMap<String, (wgpu::BindGroup, Instant)>,
     _diffuse_texture: wgpu::Texture,
+    texture_eviction_threshold: usize,
 }
 
 impl RenderState {
@@ -377,8 +379,10 @@ impl RenderState {
             text_renderer,
             text_buffers: HashMap::new(),
             stats_buffer: None,
+            text_eviction_threshold: 200,
 
             textures: HashMap::new(),
+            texture_eviction_threshold: 50,
             _diffuse_texture,
         })
     }
@@ -564,7 +568,7 @@ impl RenderState {
         self.collect_nodes(engine, root_id, 0.0, 0.0, &mut nodes, &mut text_data, &mut node_textures);
 
         // Update Text Buffers with LRU Eviction Policy
-        if self.text_buffers.len() > 200 {
+        if self.text_buffers.len() > self.text_eviction_threshold {
             let mut entries: Vec<_> = self.text_buffers.iter().map(|(k, v)| (*k, v.1)).collect();
             entries.sort_by_key(|&(_, last_used)| last_used);
             for i in 0..50 {
@@ -829,6 +833,7 @@ struct NativefyApp {
     last_fps_update: Instant,
     perf_history: Vec<AppStats>,
     dashboard_active: bool,
+    batch_size: u32,
 }
 
 impl Default for NativefyApp {
@@ -850,6 +855,7 @@ impl Default for NativefyApp {
             last_fps_update: Instant::now(),
             perf_history: Vec::new(),
             dashboard_active: std::env::var("DASHBOARD_MODE").is_ok(),
+            batch_size: 100,
         }
     }
 }
@@ -950,7 +956,7 @@ impl ApplicationHandler for NativefyApp {
                 let mut command_count = 0;
                 while let Ok(cmd) = self.ui_rx.try_recv() {
                     command_count += 1;
-                    if command_count > 100 { break; } // Safety break
+                    if command_count > self.batch_size { break; } // Safety break
                     match cmd {
                         UiCommand::CreateNode { node_type, styles, text } => {
                             if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
@@ -1073,13 +1079,14 @@ impl ApplicationHandler for NativefyApp {
                                     ],
                                 });
 
-                                if state.textures.len() > 50 {
+                                if state.textures.len() > state.texture_eviction_threshold {
                                     let mut entries: Vec<_> = state.textures.iter().map(|(k, v)| (k.clone(), v.1)).collect();
                                     entries.sort_by_key(|&(_, last_used)| last_used);
-                                    for i in 0..10 {
+                                    let evict_count = (state.texture_eviction_threshold / 5).max(1);
+                                    for i in 0..evict_count {
                                         state.textures.remove(&entries[i].0);
                                     }
-                                    println!("Memory: Evicted 10 textures (LRU).");
+                                    println!("Memory: Evicted {} textures (LRU).", evict_count);
                                 }
                                 state.textures.insert(url, (bind_group, Instant::now()));
                             }
@@ -1116,6 +1123,14 @@ impl ApplicationHandler for NativefyApp {
                             let _ = std::process::Command::new("node")
                                 .arg("scripts/protocol_sync.js")
                                 .status();
+                        }
+                        UiCommand::ScaleResources { batch_size, text_eviction_threshold, texture_eviction_threshold } => {
+                            println!("Runtime: Scaling resources (Batch: {}, Text: {}, Texture: {})", batch_size, text_eviction_threshold, texture_eviction_threshold);
+                            self.batch_size = batch_size;
+                            if let Some(state) = self.render_state.as_mut() {
+                                state.text_eviction_threshold = text_eviction_threshold;
+                                state.texture_eviction_threshold = texture_eviction_threshold;
+                            }
                         }
                     }
                 }

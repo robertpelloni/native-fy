@@ -45,6 +45,9 @@ const NativeUI = {
     toggleDashboard: () => {
         _native_toggle_dashboard();
     },
+    scaleResources: (batchSize, textThreshold, textureThreshold) => {
+        _native_scale_resources(batchSize, textThreshold, textureThreshold);
+    },
     Components: {
         Button: (text, onClick, styles = {}) => {
             // Use native button implementation for better efficiency
@@ -94,6 +97,13 @@ function runAutonomousMaintenance() {
     if (stats.fps < 10) {
         console.warn("Scheduler: Performance drop detected. Capturing diagnostic screenshot...");
         NativeUI.screenshot("perf_diag.png");
+    }
+
+    // Dynamic Auto-Scaling Trigger
+    if (stats.fps > 55) {
+        NativeUI.scaleResources(500, 1000, 200);
+    } else if (stats.fps < 30) {
+        NativeUI.scaleResources(50, 100, 20);
     }
 }
 
