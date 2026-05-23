@@ -21,7 +21,7 @@ use glyphon::{
     Resolution, Metrics, Family, Shaping,
 };
 
-const MAX_NODES: usize = 1024;
+const INITIAL_MAX_NODES: usize = 1024;
 const LOG_FILE: &str = "app.log";
 
 struct AppStats {
@@ -104,6 +104,8 @@ struct RenderState {
     num_indices: u32,
     globals_buffer: wgpu::Buffer,
     node_buffer: wgpu::Buffer,
+    node_buffer_capacity: usize,
+    bind_group_layout: wgpu::BindGroupLayout,
     bind_group: wgpu::BindGroup,
 
     // Text rendering components
@@ -200,9 +202,10 @@ impl RenderState {
             mapped_at_creation: false,
         });
 
+        let node_buffer_capacity = INITIAL_MAX_NODES;
         let node_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Node Buffer"),
-            size: (std::mem::size_of::<NodeData>() * MAX_NODES) as u64,
+            size: (std::mem::size_of::<NodeData>() * node_buffer_capacity) as u64,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -357,6 +360,8 @@ impl RenderState {
             num_indices,
             globals_buffer,
             node_buffer,
+            node_buffer_capacity,
+            bind_group_layout,
             bind_group,
 
             font_system,
@@ -402,12 +407,51 @@ impl RenderState {
         self.collect_nodes(engine, root_id, 0.0, 0.0, &mut nodes, &mut text_data);
 
         if !nodes.is_empty() {
-            let data_to_write = if nodes.len() > MAX_NODES {
-                &nodes[..MAX_NODES]
-            } else {
-                &nodes
-            };
-            self.queue.write_buffer(&self.node_buffer, 0, bytemuck::cast_slice(data_to_write));
+            if nodes.len() > self.node_buffer_capacity {
+                self.node_buffer_capacity = nodes.len().next_power_of_two();
+                self.node_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+                    label: Some("Node Buffer"),
+                    size: (std::mem::size_of::<NodeData>() * self.node_buffer_capacity) as u64,
+                    usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+                    mapped_at_creation: false,
+                });
+
+                // Re-create bind group
+                let diffuse_view = self._diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default());
+                let diffuse_sampler = self.device.create_sampler(&wgpu::SamplerDescriptor {
+                    address_mode_u: wgpu::AddressMode::ClampToEdge,
+                    address_mode_v: wgpu::AddressMode::ClampToEdge,
+                    address_mode_w: wgpu::AddressMode::ClampToEdge,
+                    mag_filter: wgpu::FilterMode::Linear,
+                    min_filter: wgpu::FilterMode::Nearest,
+                    mipmap_filter: wgpu::FilterMode::Nearest,
+                    ..Default::default()
+                });
+
+                self.bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("Bind Group"),
+                    layout: &self.bind_group_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: self.globals_buffer.as_entire_binding(),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: self.node_buffer.as_entire_binding(),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 2,
+                            resource: wgpu::BindingResource::TextureView(&diffuse_view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 3,
+                            resource: wgpu::BindingResource::Sampler(&diffuse_sampler),
+                        },
+                    ],
+                });
+            }
+            self.queue.write_buffer(&self.node_buffer, 0, bytemuck::cast_slice(&nodes));
         }
 
         // Prepare text areas
@@ -416,7 +460,7 @@ impl RenderState {
 
         // Overlay Stats
         let stats_text = format!(
-            "v0.15.0 | FPS: {} | Layout: {:?} | Nodes: {} | Protocol: ACTIVE",
+            "v0.16.0 | FPS: {} | Layout: {:?} | Nodes: {} | Protocol: ACTIVE",
             stats.fps, stats.layout_time, stats.node_count
         );
         let mut stats_buffer = glyphon::Buffer::new(&mut self.font_system, Metrics::new(12.0, 16.0));
@@ -498,7 +542,7 @@ impl RenderState {
             });
 
             if !nodes.is_empty() {
-                let instance_count = nodes.len().min(MAX_NODES) as u32;
+                let instance_count = nodes.len() as u32;
                 render_pass.set_pipeline(&self.render_pipeline);
                 render_pass.set_bind_group(0, &self.bind_group, &[]);
                 render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));

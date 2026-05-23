@@ -1,20 +1,20 @@
-# HANDOFF: Session Summary (v0.15.0)
+# HANDOFF: Session Summary (v0.16.0)
 
 ## Summary of Work
-- **Performance Overlay:** Implemented a live debug bar in `src/main.rs` showing FPS, Layout Time, Node Count, and Version.
-- **Networking:** Integrated `reqwest` and implemented a `fetch` polyfill in QuickJS (`src/runtime.rs`, `src/runtime.js`).
-- **Automation:** Finalized the `pipeline` and `protocol-sync` scripts.
-- **Documentation:** Updated all metadata and vision files to reflect the completion of the Phase 3 milestones.
+- **Build Integration:** Created `build.rs` to automatically run `protocol_sync.js` before every Rust compilation. This ensures documentation is always up-to-date with the source.
+- **Dynamic Memory:** Replaced the fixed 1024-node limit with a dynamically resizing GPU storage buffer in `src/main.rs`. The engine now supports arbitrary UI complexity.
+- **Pipeline Stabilization:** Verified the full autonomous pipeline (Sync -> Build -> Monitor).
+- **Documentation:** Updated all metadata, vision, and roadmap files to version 0.16.0.
 
 ## Structural Shifts
-- The engine now has a resident debug overlay that confirms the "Active" status of the autonomous protocol.
-- JS logic can now natively request external data, enabling dynamic application content.
+- The "Autonomous Execution Protocol" is now hard-wired into the `cargo` build process.
+- The rendering engine is no longer constrained by static buffer sizes.
 
 ## Unobvious Findings
-- Wgpu surface management and Glyphon text areas require careful ordering to satisfy the Rust borrow checker when rendering multiple passes (quads then text).
-- Headless environments correctly trigger the panic hook, allowing remote agents to diagnose "No Display" errors via `app.log`.
+- Using `next_power_of_two()` for buffer resizing minimizes the number of expensive GPU buffer re-allocations and bind group updates.
+- `build.rs` must be used with `rerun-if-changed` to avoid unnecessary script execution during incremental builds.
 
 ## For the Successor
-- Phase 4 (Component Library) is the next focus.
-- The `UiCommand` enum should be expanded to support `UpdateImage` once the asset cache is implemented.
-- Check `TODO.md` for the dynamic storage buffer resizing task.
+- Focus is now shifting toward the **Component Library** (Phase 4).
+- The `NativeUI` JS object needs methods for standard UI widgets.
+- Next high-priority task: Automated visual regression testing using Playwright.

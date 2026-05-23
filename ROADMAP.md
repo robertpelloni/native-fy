@@ -16,10 +16,12 @@
 - [x] Event bridging (Clicks, Cursor)
 - [x] Performance instrumentation
 - [x] Autonomous Execution Protocol & Pipeline Automation
-- [x] **Asset management & Networking (`fetch`)**
-- [x] **Performance Overlay & Live Debugging**
+- [x] Asset management & Networking (`fetch`)
+- [x] Performance Overlay & Live Debugging
 
 ## Phase 4: Component Library & Polish (v0.16.0 - v0.20.0)
+- [x] **Integrated Protocol Governance (`build.rs`)**
+- [x] **Dynamic Node Buffer Resizing**
 - [ ] Standard UI components (Inputs, Buttons, Lists)
 - [ ] Hot-reloading scripts
 - [ ] Automated integration testing (Visual diffs)

@@ -15,22 +15,23 @@
 10. [DONE] Implement a "Text" renderer using `glyphon` for high-performance font rendering.
 11. [DONE] Implement "Image" rendering support in the `wgpu` pipeline.
 12. [DONE] Implement live Performance & Protocol Status Overlay.
+13. [DONE] Implement dynamic storage buffer resizing for nodes.
 
 ## Scripting Runtime (QuickJS)
-13. [DONE] Scaffold `QuickJS` integration in `src/runtime.rs` and `src/runtime.js`.
-14. [DONE] Bind Rust UI events to JavaScript callbacks via a native bridge.
-15. [DONE] Implement dynamic styling bridge for JS-to-Native property mapping.
-16. [DONE] Implement a `fetch` polyfill for the QuickJS environment.
+14. [DONE] Scaffold `QuickJS` integration in `src/runtime.rs` and `src/runtime.js`.
+15. [DONE] Bind Rust UI events to JavaScript callbacks via a native bridge.
+16. [DONE] Implement dynamic styling bridge for JS-to-Native property mapping.
+17. [DONE] Implement a `fetch` polyfill for the QuickJS environment.
 
 ## Performance & Stability
-17. [DONE] Instrument core engine for frame-time and layout-time measurement.
-18. [DONE] Conduct benchmark of JS-to-Native bridge (1000 nodes in < 3ms).
-19. [DONE] Implement robust panic handling and disk-based error logging.
-20. [DONE] Create automated stability monitoring script for live deployment.
-21. [DONE] Integrate Autonomous Execution Protocol into the core pipeline.
-22. [ ] Implement dynamic storage buffer resizing for nodes.
+18. [DONE] Instrument core engine for frame-time and layout-time measurement.
+19. [DONE] Conduct benchmark of JS-to-Native bridge (1000 nodes in < 3ms).
+20. [DONE] Implement robust panic handling and disk-based error logging.
+21. [DONE] Create automated stability monitoring script for live deployment.
+22. [DONE] Integrate Autonomous Execution Protocol into the core pipeline.
+23. [DONE] Integrate Protocol Sync into the Rust build workflow (`build.rs`).
 
 ## Polish & Tooling
-23. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
-24. [DONE] Add `nativefy` convenience script to `package.json`.
-25. [ ] Add automated UI integration tests using Playwright against the native window (via screenshot comparison).
+24. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
+25. [DONE] Add `nativefy` convenience script to `package.json`.
+26. [ ] Add automated UI integration tests using Playwright against the native window (via screenshot comparison).
