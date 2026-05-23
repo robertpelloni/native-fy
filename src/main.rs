@@ -117,11 +117,11 @@ struct RenderState {
     viewport: glyphon::Viewport,
     text_atlas: TextAtlas,
     text_renderer: TextRenderer,
-    text_buffers: HashMap<taffy::prelude::NodeId, glyphon::Buffer>,
+    text_buffers: HashMap<taffy::prelude::NodeId, (glyphon::Buffer, Instant)>,
     stats_buffer: Option<glyphon::Buffer>,
 
     // Textures
-    textures: HashMap<String, wgpu::BindGroup>,
+    textures: HashMap<String, (wgpu::BindGroup, Instant)>,
     _diffuse_texture: wgpu::Texture,
 }
 
@@ -165,7 +165,7 @@ impl RenderState {
             .unwrap_or(surface_caps.formats[0]);
 
         let config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
             format: surface_format,
             width: size.width,
             height: size.height,
@@ -383,6 +383,78 @@ impl RenderState {
         })
     }
 
+    fn capture_frame(&self, texture: &wgpu::Texture, path: String) {
+        let size = self.size;
+        let u32_size = std::mem::size_of::<u32>() as u32;
+        let align = 256;
+        let unpadded_bytes_per_row = u32_size * size.width;
+        let padding = (align - unpadded_bytes_per_row % align) % align;
+        let padded_bytes_per_row = unpadded_bytes_per_row + padding;
+
+        let output_buffer_size = (padded_bytes_per_row * size.height) as wgpu::BufferAddress;
+        let output_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+            size: output_buffer_size,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            label: Some("Screenshot Buffer"),
+            mapped_at_creation: false,
+        });
+
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Screenshot Encoder"),
+        });
+
+        encoder.copy_texture_to_buffer(
+            wgpu::ImageCopyTexture {
+                aspect: wgpu::TextureAspect::All,
+                texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            wgpu::ImageCopyBuffer {
+                buffer: &output_buffer,
+                layout: wgpu::ImageDataLayout {
+                    offset: 0,
+                    bytes_per_row: Some(padded_bytes_per_row),
+                    rows_per_image: Some(size.height),
+                },
+            },
+            wgpu::Extent3d {
+                width: size.width,
+                height: size.height,
+                depth_or_array_layers: 1,
+            },
+        );
+
+        self.queue.submit(std::iter::once(encoder.finish()));
+
+        let buffer_slice = output_buffer.slice(..);
+        let (tx, rx) = std::sync::mpsc::channel();
+        buffer_slice.map_async(wgpu::MapMode::Read, move |v| tx.send(v).unwrap());
+        self.device.poll(wgpu::Maintain::Wait);
+
+        if let Ok(Ok(())) = rx.recv() {
+            let padded_data = buffer_slice.get_mapped_range();
+            let mut data = Vec::with_capacity((unpadded_bytes_per_row * size.height) as usize);
+
+            for chunk in padded_data.chunks(padded_bytes_per_row as usize) {
+                data.extend_from_slice(&chunk[..unpadded_bytes_per_row as usize]);
+            }
+
+            // Handle Bgra8UnormSrgb to Rgba8 conversion if necessary
+            if self.config.format == wgpu::TextureFormat::Bgra8UnormSrgb || self.config.format == wgpu::TextureFormat::Bgra8Unorm {
+                for chunk in data.chunks_exact_mut(4) {
+                    chunk.swap(0, 2);
+                }
+            }
+
+            if let Some(img) = image::RgbaImage::from_raw(size.width, size.height, data) {
+                let _ = img.save(path);
+            }
+            drop(padded_data);
+            output_buffer.unmap();
+        }
+    }
+
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
             self.size = new_size;
@@ -393,7 +465,7 @@ impl RenderState {
         }
     }
 
-    fn render_dashboard(&mut self, stats: &AppStats, node_count: u32) -> Result<(), wgpu::SurfaceError> {
+    fn render_dashboard(&mut self, stats: &AppStats, node_count: u32, screenshot_path: Option<String>) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
@@ -461,11 +533,14 @@ impl RenderState {
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
+        if let Some(path) = screenshot_path {
+            self.capture_frame(&output.texture, path);
+        }
         output.present();
         Ok(())
     }
 
-    fn render(&mut self, engine: &LayoutEngine, root_id: taffy::prelude::NodeId, stats: &AppStats) -> Result<(), wgpu::SurfaceError> {
+    fn render(&mut self, engine: &LayoutEngine, root_id: taffy::prelude::NodeId, stats: &AppStats, screenshot_path: Option<String>) -> Result<(), wgpu::SurfaceError> {
         let render_start = Instant::now();
 
         let output = self.surface.get_current_texture()?;
@@ -488,15 +563,20 @@ impl RenderState {
         let mut node_textures = Vec::new();
         self.collect_nodes(engine, root_id, 0.0, 0.0, &mut nodes, &mut text_data, &mut node_textures);
 
-        // Update Text Buffers with Eviction Policy
+        // Update Text Buffers with LRU Eviction Policy
         if self.text_buffers.len() > 200 {
-            self.text_buffers.clear();
-            println!("Memory: Evicted text buffer cache.");
+            let mut entries: Vec<_> = self.text_buffers.iter().map(|(k, v)| (*k, v.1)).collect();
+            entries.sort_by_key(|&(_, last_used)| last_used);
+            for i in 0..50 {
+                self.text_buffers.remove(&entries[i].0);
+            }
+            println!("Memory: Evicted 50 text buffers (LRU).");
         }
         for (id, text, _, _, width, height) in &text_data {
-            let buffer = self.text_buffers.entry(*id).or_insert_with(|| {
-                glyphon::Buffer::new(&mut self.font_system, Metrics::new(16.0, 20.0))
+            let (buffer, last_used) = self.text_buffers.entry(*id).or_insert_with(|| {
+                (glyphon::Buffer::new(&mut self.font_system, Metrics::new(16.0, 20.0)), Instant::now())
             });
+            *last_used = Instant::now();
             buffer.set_size(&mut self.font_system, Some(*width), Some(*height));
             buffer.set_text(&mut self.font_system, text, glyphon::Attrs::new().family(Family::SansSerif), Shaping::Advanced);
             buffer.shape_until_scroll(&mut self.font_system, false);
@@ -593,7 +673,7 @@ impl RenderState {
         }
 
         for (id, _, x, y, _, _) in &text_data {
-            if let Some(buffer) = self.text_buffers.get(id) {
+            if let Some((buffer, _)) = self.text_buffers.get(id) {
                 text_areas.push(TextArea {
                     buffer,
                     left: *x,
@@ -659,7 +739,12 @@ impl RenderState {
                     }
 
                     let bind_group = if let Some(url) = texture_url {
-                        self.textures.get(url).unwrap_or(&self.bind_group)
+                        if let Some((bg, last_used)) = self.textures.get_mut(url) {
+                            *last_used = Instant::now();
+                            bg
+                        } else {
+                            &self.bind_group
+                        }
                     } else {
                         &self.bind_group
                     };
@@ -675,6 +760,11 @@ impl RenderState {
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
+
+        if let Some(path) = screenshot_path {
+            self.capture_frame(&output.texture, path);
+        }
+
         output.present();
 
         let render_duration = render_start.elapsed();
@@ -732,6 +822,7 @@ struct NativefyApp {
     mouse_pos: [f32; 2],
     ui_rx: Receiver<UiCommand>,
     ui_tx: Sender<UiCommand>,
+    pending_screenshot: Option<String>,
     last_frame: Instant,
     fps: u32,
     frame_count: u32,
@@ -752,6 +843,7 @@ impl Default for NativefyApp {
             mouse_pos: [0.0; 2],
             ui_rx,
             ui_tx,
+            pending_screenshot: None,
             last_frame: Instant::now(),
             fps: 0,
             frame_count: 0,
@@ -794,8 +886,31 @@ impl ApplicationHandler for NativefyApp {
 
             // Initialize QuickJS
             let runtime = JsRuntime::new(self.ui_tx.clone());
-            let bridge_code = include_str!("runtime.js");
-            runtime.eval(bridge_code);
+            let mut bridge_code = include_str!("runtime.js").to_string();
+            if std::env::var("PROD_MODE").is_ok() {
+                bridge_code = format!("globalThis.PROD_MODE = true; \n {}", bridge_code);
+            }
+            runtime.eval(&bridge_code);
+
+            // Wire bridge features to UI for verification
+            runtime.eval(r#"
+                NativeUI.Components.Button("Trigger Reload", () => {
+                    console.log("UI: Reload triggered from button");
+                    NativeUI.reload();
+                }, { margin: "10px" });
+
+                NativeUI.Components.Button("Test Fetch", async () => {
+                    console.log("UI: Fetch triggered from button");
+                    const data = await NativeUI.fetch("https://google.com");
+                    console.log("UI: Fetch result received");
+                }, { margin: "10px" });
+
+                NativeUI.Components.Button("Capture Frame", () => {
+                    console.log("UI: Screenshot triggered from button");
+                    NativeUI.screenshot("manual_capture.png");
+                }, { margin: "10px" });
+            "#);
+
             self.js_runtime = Some(runtime);
 
             println!("Window, Wgpu, and QuickJS successfully initialized!");
@@ -959,10 +1074,14 @@ impl ApplicationHandler for NativefyApp {
                                 });
 
                                 if state.textures.len() > 50 {
-                                    state.textures.clear();
-                                    println!("Memory: Evicted texture cache.");
+                                    let mut entries: Vec<_> = state.textures.iter().map(|(k, v)| (k.clone(), v.1)).collect();
+                                    entries.sort_by_key(|&(_, last_used)| last_used);
+                                    for i in 0..10 {
+                                        state.textures.remove(&entries[i].0);
+                                    }
+                                    println!("Memory: Evicted 10 textures (LRU).");
                                 }
-                                state.textures.insert(url, bind_group);
+                                state.textures.insert(url, (bind_group, Instant::now()));
                             }
                         }
                         UiCommand::HealthCheck => {
@@ -978,16 +1097,8 @@ impl ApplicationHandler for NativefyApp {
                             }
                         }
                         UiCommand::Screenshot { path } => {
-                            println!("Runtime: Capture frame to {}", path);
-                            if let Some(state) = self.render_state.as_mut() {
-                                let size = state.size;
-
-                                // Simplified screenshot logic for E2E validation
-                                let dummy_rgba = vec![0u8; (size.width * size.height * 4) as usize];
-                                if let Some(img) = image::RgbaImage::from_raw(size.width, size.height, dummy_rgba) {
-                                    let _ = img.save(path);
-                                }
-                            }
+                            println!("Runtime: Queuing frame capture to {}", path);
+                            self.pending_screenshot = Some(path);
                         }
                         UiCommand::ToggleDashboard => {
                             self.dashboard_active = !self.dashboard_active;
@@ -1037,6 +1148,7 @@ impl ApplicationHandler for NativefyApp {
                         if self.perf_history.len() > 100 { self.perf_history.remove(0); }
                     }
 
+                    let screenshot_path = self.pending_screenshot.take();
                     if self.dashboard_active {
                         // Render visualization instead of standard UI
                         let mut dashboard_nodes = Vec::new();
@@ -1068,9 +1180,9 @@ impl ApplicationHandler for NativefyApp {
                         }
 
                         state.queue.write_buffer(&state.node_buffer, 0, bytemuck::cast_slice(&dashboard_nodes));
-                        let _ = state.render_dashboard(&stats, dashboard_nodes.len() as u32);
+                        let _ = state.render_dashboard(&stats, dashboard_nodes.len() as u32, screenshot_path);
                     } else {
-                        match state.render(engine, root_id, &stats) {
+                        match state.render(engine, root_id, &stats, screenshot_path) {
                             Ok(_) => {}
                             Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => state.resize(state.size),
                             Err(e) => log_error(&format!("Render error: {:?}", e)),

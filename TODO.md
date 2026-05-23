@@ -23,37 +23,41 @@
 18. [DONE] Implement Cache Eviction Policies for buffers and textures.
 19. [DONE] Implement Frame Capture (Screenshot) mechanism.
 20. [DONE] Implement performance history graphs in the Dashboard.
+21. [ ] Implement functional WGPU buffer-readback for Screenshots (replace dummy logic).
+22. [ ] Refactor texture/text caches to use LRU (Least Recently Used) eviction strategy.
 
 ## Scripting Runtime (QuickJS)
-21. [DONE] Scaffold `QuickJS` integration in `src/runtime.rs` and `src/runtime.js`.
-22. [DONE] Bind Rust UI events to JavaScript callbacks via a native bridge.
-23. [DONE] Implement dynamic styling bridge for JS-to-Native property mapping.
-24. [DONE] Implement a `fetch` polyfill for the QuickJS environment.
-25. [DONE] Integrate Autonomous Protocol Sync into the JS runtime.
-26. [DONE] Implement standard component library abstractions (Button, Card, etc.).
-27. [DONE] Implement Native Component Extensions for performance optimization.
-28. [DONE] Implement bridge health checks and heartbeats.
-29. [DONE] Implement `NativeUI.reload()` for live re-generation.
-30. [DONE] Implement Autonomous Task Scheduler (JS).
-31. [DONE] Implement `NativeUI.runPipeline()` for engine-triggered automation.
-32. [DONE] Implement `NativeUI.screenshot()` for visual testing.
-33. [DONE] Implement `NativeUI.toggleDashboard()` for runtime monitoring.
+23. [DONE] Scaffold `QuickJS` integration in `src/runtime.rs` and `src/runtime.js`.
+24. [DONE] Bind Rust UI events to JavaScript callbacks via a native bridge.
+25. [DONE] Implement dynamic styling bridge for JS-to-Native property mapping.
+26. [DONE] Implement a `fetch` polyfill for the QuickJS environment.
+27. [DONE] Integrate Autonomous Protocol Sync into the JS runtime.
+28. [DONE] Implement standard component library abstractions (Button, Card, etc.).
+29. [DONE] Implement Native Component Extensions for performance optimization.
+30. [DONE] Implement bridge health checks and heartbeats.
+31. [DONE] Implement `NativeUI.reload()` for live re-generation.
+32. [DONE] Implement Autonomous Task Scheduler (JS).
+33. [DONE] Implement `NativeUI.runPipeline()` for engine-triggered automation.
+34. [DONE] Implement `NativeUI.screenshot()` for visual testing.
+35. [DONE] Implement `NativeUI.toggleDashboard()` for runtime monitoring.
+36. [ ] Wire `NativeUI.fetch` and `NativeUI.reload` to explicit UI buttons in the default tree.
 
 ## Performance & Stability
-34. [DONE] Instrument core engine for frame-time and layout-time measurement.
-35. [DONE] Conduct benchmark of JS-to-Native bridge (1000 nodes in < 3ms).
-36. [DONE] Implement robust panic handling and disk-based error logging.
-37. [DONE] Create automated stability monitoring script for live deployment.
-38. [DONE] Integrate Autonomous Execution Protocol into the core pipeline.
-39. [DONE] Integrate Protocol Sync into the Rust build workflow (`build.rs`).
-40. [DONE] Implement Asynchronous Asset Loading pipeline.
-41. [DONE] Implement UI Command Batching.
-42. [DONE] Implement automated performance benchmarking and report generation.
-43. [DONE] Implement Continuous Health Watchdog (`health_monitor.js`).
-44. [DONE] Implement Full End-to-End lifecycle validation (`e2e_test.js`).
-45. [DONE] Implement Automated Visual Regression testing suite.
-46. [DONE] Implement Core-System Integration testing suite (`integration_test.js`).
+37. [DONE] Instrument core engine for frame-time and layout-time measurement.
+38. [DONE] Conduct benchmark of JS-to-Native bridge (1000 nodes in < 3ms).
+39. [DONE] Implement robust panic handling and disk-based error logging.
+40. [DONE] Create automated stability monitoring script for live deployment.
+41. [DONE] Integrate Autonomous Execution Protocol into the core pipeline.
+42. [DONE] Integrate Protocol Sync into the Rust build workflow (`build.rs`).
+43. [DONE] Implement Asynchronous Asset Loading pipeline.
+44. [DONE] Implement UI Command Batching.
+45. [DONE] Implement automated performance benchmarking and report generation.
+46. [DONE] Implement Continuous Health Watchdog (`health_monitor.js`).
+47. [DONE] Implement Full End-to-End lifecycle validation (`e2e_test.js`).
+48. [DONE] Implement Automated Visual Regression testing suite.
+49. [DONE] Implement Core-System Integration testing suite (`integration_test.js`).
+50. [ ] Execute 5-minute Live Autonomous Protocol stress test.
 
 ## Polish & Tooling
-47. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
-48. [DONE] Add `nativefy` convenience script to `package.json`.
+51. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
+52. [DONE] Add `nativefy` convenience script to `package.json`.

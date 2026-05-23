@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.29.0] - 2026-05-23
+- Implemented functional WGPU-to-CPU buffer mapping for high-fidelity screenshots.
+- Refactored texture and text buffer caches to use an LRU eviction strategy for improved memory stability.
+- Integrated an autonomous task scheduler into the JS runtime for continuous maintenance.
+- Initiated the "Live Autonomous Protocol Deployment" for long-term stress testing.
+- Wired advanced bridge features (`fetch`, `reload`) to the default UI tree for verification.
+
 ## [0.28.1] - 2026-05-23
 - Integrated core system integration tests into the build workflow (`build.rs`).
 - Implemented a Throughput Stress Test (`scripts/stress_test.js`) for high node counts.

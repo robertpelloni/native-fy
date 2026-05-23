@@ -99,6 +99,24 @@ function runAutonomousMaintenance() {
 
 setInterval(runAutonomousMaintenance, SCHEDULER_INTERVAL);
 
+// Stress Churn Simulation
+let churnCount = 0;
+function simulateAppChurn() {
+    // Dynamically create and immediately "reload" (clear) nodes to simulate activity
+    for (let i = 0; i < 50; i++) {
+        NativeUI.createNode("Box", { padding: "2px", width: "10px", height: "10px" });
+    }
+    churnCount++;
+    if (churnCount % 10 === 0) {
+        console.log(`Churn: Simulated ${churnCount * 50} node operations.`);
+        NativeUI.reload(); // Trigger cache test
+    }
+}
+
+if (globalThis.PROD_MODE) {
+    setInterval(simulateAppChurn, 2000);
+}
+
 // Performance test logic
 const NODE_COUNTS = [100, 500, 1000];
 

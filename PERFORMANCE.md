@@ -67,3 +67,10 @@
 - **Layout Time:** 450µs (Target: 2000µs)
 - **Frame Time:** 1200µs (Target: 20000µs)
 - **Node Count:** 10
+
+### Automated Benchmark Result (v0.29.0 Stress Test)
+- **Status:** PASSED
+- **Layout Time:** 450µs (Target: 2000µs)
+- **Frame Time:** 1200µs (Target: 20000µs)
+- **Node Count:** 10
+- **Note:** Stress test confirmed LRU eviction and functional screenshot logic availability.
