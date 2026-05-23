@@ -27,6 +27,9 @@ const NativeUI = {
     getMetadata: () => {
         return _native_get_metadata();
     },
+    getPerformanceStats: () => {
+        return _native_get_perf_stats();
+    },
     healthCheck: () => {
         _native_health_check();
     },
@@ -35,6 +38,9 @@ const NativeUI = {
     },
     runPipeline: () => {
         _native_run_pipeline();
+    },
+    screenshot: (path) => {
+        _native_screenshot(path);
     },
     Components: {
         Button: (text, onClick, styles = {}) => {
@@ -79,9 +85,13 @@ function runAutonomousMaintenance() {
     NativeUI.healthCheck();
 
     const meta = NativeUI.getMetadata();
-    console.log(`Scheduler: Active on version ${meta.version}`);
+    const stats = NativeUI.getPerformanceStats();
+    console.log(`Scheduler: Active on version ${meta.version} | Stats: FPS=${stats.fps}`);
 
-    // If we were in a failed state, we would trigger NativeUI.reload() or NativeUI.syncProtocol()
+    if (stats.fps < 10) {
+        console.warn("Scheduler: Performance drop detected. Capturing diagnostic screenshot...");
+        NativeUI.screenshot("perf_diag.png");
+    }
 }
 
 setInterval(runAutonomousMaintenance, SCHEDULER_INTERVAL);

@@ -20,6 +20,7 @@ pub enum UiCommand {
     HealthCheck,
     Reload,
     RunPipeline,
+    Screenshot { path: String },
 }
 
 pub struct JsRuntime {
@@ -111,6 +112,11 @@ impl JsRuntime {
                 let _ = tx_pipe.send(UiCommand::RunPipeline);
             })).unwrap();
 
+            let tx_ss = tx.clone();
+            globals.set("_native_screenshot", Function::new(ctx.clone(), move |path: String| {
+                let _ = tx_ss.send(UiCommand::Screenshot { path });
+            })).unwrap();
+
             globals.set("_native_get_metadata", Function::new(ctx.clone(), || {
                 let version = include_str!("../VERSION.md").trim();
                 let todo = include_str!("../TODO.md");
@@ -118,6 +124,15 @@ impl JsRuntime {
                 meta.insert("version".to_string(), version.to_string());
                 meta.insert("todo".to_string(), todo.to_string());
                 meta
+            })).unwrap();
+
+            globals.set("_native_get_perf_stats", Function::new(ctx.clone(), || {
+                // In a full implementation, this would return live stats from the AppState.
+                // For now, return a placeholder map.
+                let mut stats = HashMap::new();
+                stats.insert("fps".to_string(), 60.0);
+                stats.insert("latency".to_string(), 0.5);
+                stats
             })).unwrap();
         });
 

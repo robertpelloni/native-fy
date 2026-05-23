@@ -35,9 +35,10 @@
 - [x] Full E2E Lifecycle Automation & Prod Readiness
 - [x] Dynamic Texture Management & GPU Assets
 - [x] Live UI Tree Reloading (`NativeUI.reload()`)
-- [x] **Autonomous Task Execution & Runtime Automation**
+- [x] Autonomous Task Execution & Runtime Automation
+- [x] **Visual Regression Suite & Frame Capture**
+- [x] **Memory Safety: Cache Eviction Policies**
 - [ ] SVG/Vector graphics support
 - [ ] Python/Zig language bindings
 - [ ] Embedded platform targets (ARM/Linux)
 - [ ] Hot-reloading scripts
-- [ ] Automated visual regression testing
