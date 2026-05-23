@@ -30,6 +30,9 @@ const NativeUI = {
     healthCheck: () => {
         _native_health_check();
     },
+    reload: () => {
+        _native_reload();
+    },
     Components: {
         Button: (text, onClick, styles = {}) => {
             // Use native button implementation for better efficiency

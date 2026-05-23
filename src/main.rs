@@ -120,7 +120,8 @@ struct RenderState {
     text_buffers: HashMap<taffy::prelude::NodeId, glyphon::Buffer>,
     stats_buffer: Option<glyphon::Buffer>,
 
-    // Texture
+    // Textures
+    textures: HashMap<String, wgpu::BindGroup>,
     _diffuse_texture: wgpu::Texture,
 }
 
@@ -377,6 +378,7 @@ impl RenderState {
             text_buffers: HashMap::new(),
             stats_buffer: None,
 
+            textures: HashMap::new(),
             _diffuse_texture,
         })
     }
@@ -411,7 +413,8 @@ impl RenderState {
         // Collect node data
         let mut nodes = Vec::new();
         let mut text_data = Vec::new();
-        self.collect_nodes(engine, root_id, 0.0, 0.0, &mut nodes, &mut text_data);
+        let mut node_textures = Vec::new();
+        self.collect_nodes(engine, root_id, 0.0, 0.0, &mut nodes, &mut text_data, &mut node_textures);
 
         // Update Text Buffers
         for (id, text, _, _, width, height) in &text_data {
@@ -565,12 +568,30 @@ impl RenderState {
             });
 
             if !nodes.is_empty() {
-                let instance_count = nodes.len() as u32;
                 render_pass.set_pipeline(&self.render_pipeline);
-                render_pass.set_bind_group(0, &self.bind_group, &[]);
                 render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
                 render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-                render_pass.draw_indexed(0..self.num_indices, 0, 0..instance_count);
+
+                let mut start_idx = 0;
+                while start_idx < nodes.len() {
+                    let texture_url = &node_textures[start_idx];
+                    let mut end_idx = start_idx + 1;
+
+                    // Batch identical textures
+                    while end_idx < nodes.len() && &node_textures[end_idx] == texture_url {
+                        end_idx += 1;
+                    }
+
+                    let bind_group = if let Some(url) = texture_url {
+                        self.textures.get(url).unwrap_or(&self.bind_group)
+                    } else {
+                        &self.bind_group
+                    };
+
+                    render_pass.set_bind_group(0, bind_group, &[]);
+                    render_pass.draw_indexed(0..self.num_indices, 0, start_idx as u32..end_idx as u32);
+                    start_idx = end_idx;
+                }
             }
 
             // Draw text
@@ -594,18 +615,24 @@ impl RenderState {
         parent_y: f32,
         nodes: &mut Vec<NodeData>,
         text_data: &mut Vec<(taffy::prelude::NodeId, String, f32, f32, f32, f32)>,
+        node_textures: &mut Vec<Option<String>>,
     ) {
         if let Some(layout) = engine.layout(id) {
             let x = parent_x + layout.location.x;
             let y = parent_y + layout.location.y;
 
+            let node_type = engine.get_type(id);
+            let is_image = node_type == Some(&"Image".to_string());
+
             nodes.push(NodeData {
                 pos: [x, y],
                 size: [layout.size.width, layout.size.height],
                 color: [0.5, 0.6, 0.7, 1.0], // Placeholder color
-                mode: if engine.get_type(id) == Some(&"Image".to_string()) { 1 } else { 0 },
+                mode: if is_image { 1 } else { 0 },
                 _padding: [0.0; 3],
             });
+
+            node_textures.push(if is_image { engine.get_value(id).cloned() } else { None });
 
             if let Some(text) = engine.get_text(id) {
                 text_data.push((id, text.clone(), x, y, layout.size.width, layout.size.height));
@@ -613,7 +640,7 @@ impl RenderState {
 
             if let Some(children) = engine.children(id) {
                 for child_id in children {
-                    self.collect_nodes(engine, child_id, x, y, nodes, text_data);
+                    self.collect_nodes(engine, child_id, x, y, nodes, text_data, node_textures);
                 }
             }
         }
@@ -780,13 +807,91 @@ impl ApplicationHandler for NativefyApp {
                         }
                         UiCommand::UpdateImage { url, data } => {
                             println!("Runtime: Loading image asset from {}", url);
-                            if let Ok(img) = image::load_from_memory(&data) {
-                                let _rgba = img.to_rgba8();
-                                // TODO: Upload to GPU texture map
+                            if let (Some(state), Ok(img)) = (self.render_state.as_mut(), image::load_from_memory(&data)) {
+                                let rgba = img.to_rgba8();
+                                let (width, height) = rgba.dimensions();
+
+                                let texture_size = wgpu::Extent3d {
+                                    width,
+                                    height,
+                                    depth_or_array_layers: 1,
+                                };
+
+                                let texture = state.device.create_texture(&wgpu::TextureDescriptor {
+                                    label: Some(&url),
+                                    size: texture_size,
+                                    mip_level_count: 1,
+                                    sample_count: 1,
+                                    dimension: wgpu::TextureDimension::D2,
+                                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                                    usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                                    view_formats: &[],
+                                });
+
+                                state.queue.write_texture(
+                                    wgpu::ImageCopyTexture {
+                                        texture: &texture,
+                                        mip_level: 0,
+                                        origin: wgpu::Origin3d::ZERO,
+                                        aspect: wgpu::TextureAspect::All,
+                                    },
+                                    &rgba,
+                                    wgpu::ImageDataLayout {
+                                        offset: 0,
+                                        bytes_per_row: Some(4 * width),
+                                        rows_per_image: Some(height),
+                                    },
+                                    texture_size,
+                                );
+
+                                let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+                                let sampler = state.device.create_sampler(&wgpu::SamplerDescriptor {
+                                    address_mode_u: wgpu::AddressMode::ClampToEdge,
+                                    address_mode_v: wgpu::AddressMode::ClampToEdge,
+                                    address_mode_w: wgpu::AddressMode::ClampToEdge,
+                                    mag_filter: wgpu::FilterMode::Linear,
+                                    min_filter: wgpu::FilterMode::Nearest,
+                                    mipmap_filter: wgpu::FilterMode::Nearest,
+                                    ..Default::default()
+                                });
+
+                                let bind_group = state.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                                    label: Some("Texture Bind Group"),
+                                    layout: &state.bind_group_layout,
+                                    entries: &[
+                                        wgpu::BindGroupEntry {
+                                            binding: 0,
+                                            resource: state.globals_buffer.as_entire_binding(),
+                                        },
+                                        wgpu::BindGroupEntry {
+                                            binding: 1,
+                                            resource: state.node_buffer.as_entire_binding(),
+                                        },
+                                        wgpu::BindGroupEntry {
+                                            binding: 2,
+                                            resource: wgpu::BindingResource::TextureView(&view),
+                                        },
+                                        wgpu::BindGroupEntry {
+                                            binding: 3,
+                                            resource: wgpu::BindingResource::Sampler(&sampler),
+                                        },
+                                    ],
+                                });
+
+                                state.textures.insert(url, bind_group);
                             }
                         }
                         UiCommand::HealthCheck => {
                             println!("Health Check: Bridge is responsive.");
+                        }
+                        UiCommand::Reload => {
+                            println!("Runtime: Reloading UI tree...");
+                            if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
+                                // Simple reload by clearing and re-generating
+                                let _ = ui_gen::generate_ui_tree(engine);
+                                let _ = engine.compute(root_id);
+                                recompute = true;
+                            }
                         }
                         UiCommand::SyncProtocol => {
                             println!("Runtime: Triggering Protocol Sync...");

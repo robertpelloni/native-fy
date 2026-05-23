@@ -41,6 +41,7 @@ pub struct LayoutEngine {
     taffy: TaffyTree,
     node_metadata: HashMap<NodeId, String>, // NodeId -> Text content
     node_types: HashMap<NodeId, String>,   // NodeId -> Type
+    node_values: HashMap<NodeId, String>,  // NodeId -> Value/Src
 }
 
 impl LayoutEngine {
@@ -49,6 +50,7 @@ impl LayoutEngine {
             taffy: TaffyTree::new(),
             node_metadata: HashMap::new(),
             node_types: HashMap::new(),
+            node_values: HashMap::new(),
         }
     }
 
@@ -186,6 +188,10 @@ impl LayoutEngine {
             self.node_metadata.insert(node_id, text.clone());
         }
 
+        if let Some(value) = &node.value {
+            self.node_values.insert(node_id, value.clone());
+        }
+
         self.node_types.insert(node_id, node.node_type.clone());
 
         Ok(node_id)
@@ -215,6 +221,10 @@ impl LayoutEngine {
 
     pub fn get_type(&self, id: NodeId) -> Option<&String> {
         self.node_types.get(&id)
+    }
+
+    pub fn get_value(&self, id: NodeId) -> Option<&String> {
+        self.node_values.get(&id)
     }
 
     pub fn node_count(&self) -> usize {
