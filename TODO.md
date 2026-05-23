@@ -23,8 +23,8 @@
 18. [DONE] Implement Cache Eviction Policies for buffers and textures.
 19. [DONE] Implement Frame Capture (Screenshot) mechanism.
 20. [DONE] Implement performance history graphs in the Dashboard.
-21. [ ] Implement functional WGPU buffer-readback for Screenshots (replace dummy logic).
-22. [ ] Refactor texture/text caches to use LRU (Least Recently Used) eviction strategy.
+21. [DONE] Implement functional WGPU buffer-readback for Screenshots (replace dummy logic).
+22. [DONE] Refactor texture/text caches to use LRU (Least Recently Used) eviction strategy.
 
 ## Scripting Runtime (QuickJS)
 23. [DONE] Scaffold `QuickJS` integration in `src/runtime.rs` and `src/runtime.js`.
@@ -40,7 +40,7 @@
 33. [DONE] Implement `NativeUI.runPipeline()` for engine-triggered automation.
 34. [DONE] Implement `NativeUI.screenshot()` for visual testing.
 35. [DONE] Implement `NativeUI.toggleDashboard()` for runtime monitoring.
-36. [ ] Wire `NativeUI.fetch` and `NativeUI.reload` to explicit UI buttons in the default tree.
+36. [DONE] Wire `NativeUI.fetch` and `NativeUI.reload` to explicit UI buttons in the default tree.
 
 ## Performance & Stability
 37. [DONE] Instrument core engine for frame-time and layout-time measurement.
@@ -56,7 +56,7 @@
 47. [DONE] Implement Full End-to-End lifecycle validation (`e2e_test.js`).
 48. [DONE] Implement Automated Visual Regression testing suite.
 49. [DONE] Implement Core-System Integration testing suite (`integration_test.js`).
-50. [ ] Execute 5-minute Live Autonomous Protocol stress test.
+50. [DONE] Execute 5-minute Live Autonomous Protocol stress test.
 
 ## Polish & Tooling
 51. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
