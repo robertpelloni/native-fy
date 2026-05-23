@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "0.19.0"
+version = "0.20.0"
 edition = "2024"
 
 [dependencies]
@@ -14,3 +14,5 @@ rquickjs = "0.11.0"
 image = "0.25.10"
 chrono = "0.4.39"
 reqwest = { version = "0.12.12", features = ["blocking"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

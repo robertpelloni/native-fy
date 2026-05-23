@@ -25,10 +25,12 @@ use glyphon::{
 const INITIAL_MAX_NODES: usize = 1024;
 const LOG_FILE: &str = "app.log";
 
+#[derive(serde::Serialize)]
 struct AppStats {
     fps: u32,
-    layout_time: Duration,
+    layout_time_micros: u64,
     node_count: usize,
+    frame_time_micros: u64,
 }
 
 fn log_error(msg: &str) {
@@ -474,8 +476,8 @@ impl RenderState {
 
         // Overlay Stats
         let stats_text = format!(
-            "v0.19.0 | FPS: {} | Layout: {:?} | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
-            stats.fps, stats.layout_time, stats.node_count
+            "v0.19.0 | FPS: {} | Layout: {}µs | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
+            stats.fps, stats.layout_time_micros, stats.node_count
         );
 
         let stats_buffer = self.stats_buffer.get_or_insert_with(|| {
@@ -791,13 +793,22 @@ impl ApplicationHandler for NativefyApp {
                 if let (Some(state), Some(engine), Some(root_id)) = (self.render_state.as_mut(), self.layout_engine.as_ref(), self.root_id) {
                     let stats = AppStats {
                         fps: self.fps,
-                        layout_time: layout_duration,
+                        layout_time_micros: layout_duration.as_micros() as u64,
                         node_count: engine.node_count(),
+                        frame_time_micros: now.duration_since(self.last_fps_update).as_micros() as u64 / (self.frame_count.max(1) as u64),
                     };
                     match state.render(engine, root_id, &stats) {
                         Ok(_) => {}
                         Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => state.resize(state.size),
                         Err(e) => log_error(&format!("Render error: {:?}", e)),
+                    }
+
+                    // Benchmark export trigger
+                    if std::env::var("BENCHMARK_MODE").is_ok() && self.frame_count >= 100 {
+                         let json = serde_json::to_string_pretty(&stats).unwrap();
+                         std::fs::write("perf_metrics.json", json).unwrap();
+                         println!("Benchmark: Exported metrics to perf_metrics.json");
+                         event_loop.exit();
                     }
                 }
                 if let Some(window) = self.window.as_ref() {

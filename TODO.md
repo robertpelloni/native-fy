@@ -36,8 +36,9 @@
 27. [DONE] Integrate Protocol Sync into the Rust build workflow (`build.rs`).
 28. [DONE] Implement Asynchronous Asset Loading pipeline.
 29. [DONE] Implement UI Command Batching.
+30. [DONE] Implement automated performance benchmarking and report generation.
 
 ## Polish & Tooling
-30. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
-31. [DONE] Add `nativefy` convenience script to `package.json`.
-32. [ ] Add automated UI integration tests using Playwright against the native window (via screenshot comparison).
+31. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
+32. [DONE] Add `nativefy` convenience script to `package.json`.
+33. [ ] Add automated UI integration tests using Playwright against the native window (via screenshot comparison).
