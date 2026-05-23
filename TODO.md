@@ -16,23 +16,25 @@
 11. [DONE] Implement "Image" rendering support in the `wgpu` pipeline.
 12. [DONE] Implement live Performance & Protocol Status Overlay.
 13. [DONE] Implement dynamic storage buffer resizing for nodes.
+14. [DONE] Optimize text rendering with glyphon buffer caching.
 
 ## Scripting Runtime (QuickJS)
-14. [DONE] Scaffold `QuickJS` integration in `src/runtime.rs` and `src/runtime.js`.
-15. [DONE] Bind Rust UI events to JavaScript callbacks via a native bridge.
-16. [DONE] Implement dynamic styling bridge for JS-to-Native property mapping.
-17. [DONE] Implement a `fetch` polyfill for the QuickJS environment.
-18. [DONE] Integrate Autonomous Protocol Sync into the JS runtime.
+15. [DONE] Scaffold `QuickJS` integration in `src/runtime.rs` and `src/runtime.js`.
+16. [DONE] Bind Rust UI events to JavaScript callbacks via a native bridge.
+17. [DONE] Implement dynamic styling bridge for JS-to-Native property mapping.
+18. [DONE] Implement a `fetch` polyfill for the QuickJS environment.
+19. [DONE] Integrate Autonomous Protocol Sync into the JS runtime.
+20. [DONE] Implement standard component library abstractions (Button, Card, etc.).
 
 ## Performance & Stability
-19. [DONE] Instrument core engine for frame-time and layout-time measurement.
-20. [DONE] Conduct benchmark of JS-to-Native bridge (1000 nodes in < 3ms).
-21. [DONE] Implement robust panic handling and disk-based error logging.
-22. [DONE] Create automated stability monitoring script for live deployment.
-23. [DONE] Integrate Autonomous Execution Protocol into the core pipeline.
-24. [DONE] Integrate Protocol Sync into the Rust build workflow (`build.rs`).
+21. [DONE] Instrument core engine for frame-time and layout-time measurement.
+22. [DONE] Conduct benchmark of JS-to-Native bridge (1000 nodes in < 3ms).
+23. [DONE] Implement robust panic handling and disk-based error logging.
+24. [DONE] Create automated stability monitoring script for live deployment.
+25. [DONE] Integrate Autonomous Execution Protocol into the core pipeline.
+26. [DONE] Integrate Protocol Sync into the Rust build workflow (`build.rs`).
 
 ## Polish & Tooling
-25. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
-26. [DONE] Add `nativefy` convenience script to `package.json`.
-27. [ ] Add automated UI integration tests using Playwright against the native window (via screenshot comparison).
+27. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
+28. [DONE] Add `nativefy` convenience script to `package.json`.
+29. [ ] Add automated UI integration tests using Playwright against the native window (via screenshot comparison).

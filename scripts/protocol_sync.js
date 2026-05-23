@@ -25,6 +25,16 @@ function syncProtocol() {
     // Extraction of TODOs (simplified)
     console.log("Roadmap and TODOs verified.");
 
+    // Lockfile sync
+    if (fs.existsSync('package.json')) {
+        const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+        if (pkg.version !== version) {
+            pkg.version = version;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            console.log("Synchronized package.json version.");
+        }
+    }
+
     console.log("Protocol Sync Complete.");
 }
 

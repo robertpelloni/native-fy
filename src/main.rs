@@ -5,6 +5,7 @@ mod runtime;
 use std::sync::Arc;
 use std::time::{Instant, Duration};
 use std::sync::mpsc::{self, Receiver, Sender};
+use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::Write;
 use layout::{LayoutEngine, Node, AstRect, FlexStyles};
@@ -114,6 +115,8 @@ struct RenderState {
     viewport: glyphon::Viewport,
     text_atlas: TextAtlas,
     text_renderer: TextRenderer,
+    text_buffers: HashMap<taffy::prelude::NodeId, glyphon::Buffer>,
+    stats_buffer: Option<glyphon::Buffer>,
 
     // Texture
     _diffuse_texture: wgpu::Texture,
@@ -369,6 +372,8 @@ impl RenderState {
             viewport,
             text_atlas,
             text_renderer,
+            text_buffers: HashMap::new(),
+            stats_buffer: None,
 
             _diffuse_texture,
         })
@@ -405,6 +410,16 @@ impl RenderState {
         let mut nodes = Vec::new();
         let mut text_data = Vec::new();
         self.collect_nodes(engine, root_id, 0.0, 0.0, &mut nodes, &mut text_data);
+
+        // Update Text Buffers
+        for (id, text, _, _, width, height) in &text_data {
+            let buffer = self.text_buffers.entry(*id).or_insert_with(|| {
+                glyphon::Buffer::new(&mut self.font_system, Metrics::new(16.0, 20.0))
+            });
+            buffer.set_size(&mut self.font_system, Some(*width), Some(*height));
+            buffer.set_text(&mut self.font_system, text, glyphon::Attrs::new().family(Family::SansSerif), Shaping::Advanced);
+            buffer.shape_until_scroll(&mut self.font_system, false);
+        }
 
         if !nodes.is_empty() {
             if nodes.len() > self.node_buffer_capacity {
@@ -456,29 +471,22 @@ impl RenderState {
 
         // Prepare text areas
         let mut text_areas = Vec::new();
-        let mut buffers = Vec::new(); // Keep buffers alive
 
         // Overlay Stats
         let stats_text = format!(
-            "v0.17.0 | FPS: {} | Layout: {:?} | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
+            "v0.18.0 | FPS: {} | Layout: {:?} | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
             stats.fps, stats.layout_time, stats.node_count
         );
-        let mut stats_buffer = glyphon::Buffer::new(&mut self.font_system, Metrics::new(12.0, 16.0));
+
+        let stats_buffer = self.stats_buffer.get_or_insert_with(|| {
+            glyphon::Buffer::new(&mut self.font_system, Metrics::new(12.0, 16.0))
+        });
         stats_buffer.set_size(&mut self.font_system, Some(self.size.width as f32), Some(20.0));
         stats_buffer.set_text(&mut self.font_system, &stats_text, glyphon::Attrs::new().family(Family::Monospace).color(glyphon::Color::rgb(0, 255, 0)), Shaping::Advanced);
         stats_buffer.shape_until_scroll(&mut self.font_system, false);
-        buffers.push(stats_buffer);
-
-        for (text, _x, _y, width, height) in &text_data {
-            let mut buffer = glyphon::Buffer::new(&mut self.font_system, Metrics::new(16.0, 20.0));
-            buffer.set_size(&mut self.font_system, Some(*width), Some(*height));
-            buffer.set_text(&mut self.font_system, text, glyphon::Attrs::new().family(Family::SansSerif), Shaping::Advanced);
-            buffer.shape_until_scroll(&mut self.font_system, false);
-            buffers.push(buffer);
-        }
 
         text_areas.push(TextArea {
-            buffer: &buffers[0],
+            buffer: stats_buffer,
             left: 10.0,
             top: 10.0,
             scale: 1.0,
@@ -492,21 +500,23 @@ impl RenderState {
             custom_glyphs: &[],
         });
 
-        for (i, (_, x, y, _, _)) in text_data.iter().enumerate() {
-            text_areas.push(TextArea {
-                buffer: &buffers[i + 1],
-                left: *x,
-                top: *y,
-                scale: 1.0,
-                bounds: TextBounds {
-                    left: 0,
-                    top: 0,
-                    right: self.size.width as i32,
-                    bottom: self.size.height as i32,
-                },
-                default_color: glyphon::Color::rgb(255, 255, 255),
-                custom_glyphs: &[],
-            });
+        for (id, _, x, y, _, _) in &text_data {
+            if let Some(buffer) = self.text_buffers.get(id) {
+                text_areas.push(TextArea {
+                    buffer,
+                    left: *x,
+                    top: *y,
+                    scale: 1.0,
+                    bounds: TextBounds {
+                        left: 0,
+                        top: 0,
+                        right: self.size.width as i32,
+                        bottom: self.size.height as i32,
+                    },
+                    default_color: glyphon::Color::rgb(255, 255, 255),
+                    custom_glyphs: &[],
+                });
+            }
         }
 
         // Prepare text rendering
@@ -570,7 +580,7 @@ impl RenderState {
         parent_x: f32,
         parent_y: f32,
         nodes: &mut Vec<NodeData>,
-        text_data: &mut Vec<(String, f32, f32, f32, f32)>,
+        text_data: &mut Vec<(taffy::prelude::NodeId, String, f32, f32, f32, f32)>,
     ) {
         if let Some(layout) = engine.layout(id) {
             let x = parent_x + layout.location.x;
@@ -585,7 +595,7 @@ impl RenderState {
             });
 
             if let Some(text) = engine.get_text(id) {
-                text_data.push((text.clone(), x, y, layout.size.width, layout.size.height));
+                text_data.push((id, text.clone(), x, y, layout.size.width, layout.size.height));
             }
 
             if let Some(children) = engine.children(id) {

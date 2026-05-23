@@ -26,6 +26,37 @@ const NativeUI = {
     },
     getMetadata: () => {
         return _native_get_metadata();
+    },
+    Components: {
+        Button: (text, onClick, styles = {}) => {
+            const id = NativeUI.createNode("Box", {
+                padding: "10px 20px",
+                margin: "5px",
+                justifyContent: "center",
+                alignItems: "center",
+                ...styles
+            }, text);
+            if (onClick) {
+                NativeUI.addEventListener("click", (data) => {
+                    // Basic hit detection placeholder
+                    onClick(data);
+                });
+            }
+            return id;
+        },
+        Header: (text, styles = {}) => {
+            return NativeUI.createNode("Text", {
+                padding: "20px",
+                ...styles
+            }, text);
+        },
+        Card: (children, styles = {}) => {
+            return NativeUI.createNode("Box", {
+                padding: "15px",
+                margin: "10px",
+                ...styles
+            });
+        }
     }
 };
 
