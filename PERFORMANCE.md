@@ -62,39 +62,14 @@
 - **Frame Time:** 1200µs (Target: 20000µs)
 - **Node Count:** 10
 
-### Automated Benchmark Result (2026-05-23T13:39:28.837Z)
+### Automated Benchmark Result (2026-05-24T02:34:44.626Z)
 - **Status:** PASSED
-- **Layout Time:** 450µs (Target: 2000µs)
-- **Frame Time:** 1200µs (Target: 20000µs)
-- **Node Count:** 10
+- **Layout Time:** 29µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
 
-### Automated Benchmark Result (v0.29.0 Stress Test)
+### Automated Benchmark Result (2026-05-24T02:37:40.539Z)
 - **Status:** PASSED
-- **Layout Time:** 450µs (Target: 2000µs)
-- **Frame Time:** 1200µs (Target: 20000µs)
-- **Node Count:** 10
-- **Note:** Stress test confirmed LRU eviction and functional screenshot logic availability.
-
-### Automated Benchmark Result (2026-05-23T19:38:50.669Z)
-- **Status:** PASSED
-- **Layout Time:** 450µs (Target: 2000µs)
-- **Frame Time:** 1200µs (Target: 20000µs)
-- **Node Count:** 10
-
-### Automated Benchmark Result (2026-05-23T21:02:26.170Z)
-- **Status:** PASSED
-- **Layout Time:** 450µs (Target: 2000µs)
-- **Frame Time:** 1200µs (Target: 20000µs)
-- **Node Count:** 10
-
-### Automated Benchmark Result (2026-05-23T21:16:48.974Z)
-- **Status:** PASSED
-- **Layout Time:** 450µs (Target: 2000µs)
-- **Frame Time:** 1200µs (Target: 20000µs)
-- **Node Count:** 10
-
-### Automated Benchmark Result (2026-05-23T23:32:34.978Z)
-- **Status:** PASSED
-- **Layout Time:** 450µs (Target: 2000µs)
-- **Frame Time:** 1200µs (Target: 20000µs)
-- **Node Count:** 10
+- **Layout Time:** 46µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1

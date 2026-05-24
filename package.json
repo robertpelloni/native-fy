@@ -1,6 +1,6 @@
 {
   "name": "app",
-  "version": "0.32.0",
+  "version": "0.33.0",
   "description": "Yes, this is an incredible use case for Google Jules. Because Jules is an **asynchronous coding agent** that clones your repo into an isolated cloud VM, plans multi-file changes, runs compilation checks, and pushes clean pull requests, it is *perfectly* suited to handle the grueling, multi-step process of building this transpiler pipeline.",
   "main": "index.js",
   "scripts": {
@@ -11,6 +11,8 @@
     "test:e2e": "node scripts/e2e_test.js",
     "test:visual": "node scripts/visual_test.js",
     "test:integration": "node scripts/integration_test.js",
+    "test:staging": "node scripts/staging_integration.js",
+    "deploy:staging": "node scripts/stage_deployment.js",
     "start": "PROD_MODE=1 cargo run --release",
     "pipeline": "npm run protocol-sync && node scripts/web_scraper.js \"https://google.com\" > ui_ast.json && node scripts/compiler_agent.js ui_ast.json && cargo build --release && npm run test:integration && npm run benchmark && npm run test:visual && node scripts/monitor.js"
   },

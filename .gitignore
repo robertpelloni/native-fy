@@ -3,3 +3,7 @@ node_modules/
 .jules/
 *.log
 app_output.txt
+staging/
+perf_metrics.json
+STAGING_REPORT.md
+PERFORMANCE_AUDIT.md
