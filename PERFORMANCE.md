@@ -99,26 +99,14 @@
 - **Frame Time:** 1200µs (Target: 20000µs)
 - **Node Count:** 10
 
-### Automated Benchmark Result (2024-05-24T04:12:09.631Z)
+### Automated Benchmark Result (2024-05-24T08:35:49.932Z)
 - **Status:** PASSED
-- **Layout Time:** 450µs (Target: 2000µs)
-- **Frame Time:** 1200µs (Target: 20000µs)
-- **Node Count:** 10
+- **Layout Time:** 55µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
 
-### Automated Benchmark Result (2024-05-24T04:21:26.278Z)
+### Automated Benchmark Result (2024-05-24T08:45:34.239Z)
 - **Status:** PASSED
-- **Layout Time:** 450µs (Target: 2000µs)
-- **Frame Time:** 1200µs (Target: 20000µs)
-- **Node Count:** 10
-
-### Automated Benchmark Result (2024-05-24T04:45:08.063Z)
-- **Status:** PASSED
-- **Layout Time:** 450µs (Target: 2000µs)
-- **Frame Time:** 1200µs (Target: 20000µs)
-- **Node Count:** 10
-
-### Automated Benchmark Result (2024-05-24T05:08:16.903Z)
-- **Status:** PASSED
-- **Layout Time:** 450µs (Target: 2000µs)
-- **Frame Time:** 1200µs (Target: 20000µs)
-- **Node Count:** 10
+- **Layout Time:** 65µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1

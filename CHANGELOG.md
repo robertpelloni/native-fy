@@ -1,10 +1,9 @@
 # CHANGELOG
 
-## [0.34.0] - 2024-05-24
-- Integrated Autonomous Execution Pipeline into the core build process.
-- Enforced mandatory pre-compilation bridge validation via `build.rs`.
-- Unified the end-to-end autonomous lifecycle in a single orchestration command.
-- Formally established the staging environment as a gated deployment stage.
+## [0.35.0] - 2024-05-24
+- Modularized core engine architecture into `app.rs`, `render.rs`, and `stats.rs`.
+- Refactored `src/main.rs` into a lightweight entry point.
+- Formalized shared telemetry state and error logging in a dedicated module.
 
 ## [0.32.0] - 2024-05-23
 - Implemented high-performance Native Monitoring Module in Rust (`src/monitor.rs`).
@@ -39,6 +38,12 @@
 - Refined automated repository synchronization and intelligent merge protocols.
 
 ## [0.27.0] - 2024-05-23
+- Implemented core system integration testing suite (`scripts/integration_test.js`).
+- Unified the autonomous lifecycle under a single orchestration command.
+- Verified bridge interface consistency across JS and Rust layers.
+- Formally integrated core validation as a mandatory E2E lifecycle stage.
+
+## [0.26.0] - 2024-05-23
 - Implemented a runtime toggle for Dashboard Mode (`toggleDashboard`).
 - Enhanced the Native Monitoring Dashboard with real-time performance history graphs.
 - Integrated the dashboard rendering path with the high-performance text engine.

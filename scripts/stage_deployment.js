@@ -25,7 +25,6 @@ function stage() {
     fs.writeFileSync(path.join(STAGING_DIR, '.env.staging'), stagingEnv);
 
     console.log("Staging: Copying runtime assets...");
-    // Future asset bundles would go here
 
     console.log("Deployment to Staging Successful.");
 }

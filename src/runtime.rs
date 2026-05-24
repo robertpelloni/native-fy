@@ -74,24 +74,17 @@ impl JsRuntime {
             globals.set("_native_fetch", Function::new(ctx.clone(), move |url: String| {
                 let tx = tx_fetch.clone();
                 let url_clone = url.clone();
-                match reqwest::blocking::get(&url_clone) {
-                    Ok(resp) => {
+                std::thread::spawn(move || {
+                    if let Ok(resp) = reqwest::blocking::get(&url_clone) {
                         if let Ok(bytes) = resp.bytes() {
-                            // If it's an image, update the GPU cache
-                            if url_clone.ends_with(".png") || url_clone.ends_with(".jpg") || url_clone.ends_with(".jpeg") {
-                                let _ = tx.send(UiCommand::UpdateImage {
-                                    url: url_clone,
-                                    data: bytes.to_vec(),
-                                });
-                            }
-                            // Return the response body to JS (QuickJS context)
-                            String::from_utf8_lossy(&bytes).to_string()
-                        } else {
-                            "Error: Failed to read response bytes".to_string()
+                            let _ = tx.send(UiCommand::UpdateImage {
+                                url: url_clone,
+                                data: bytes.to_vec(),
+                            });
                         }
                     }
-                    Err(e) => format!("Error: {}", e),
-                }
+                });
+                "Asset loading started...".to_string()
             })).unwrap();
 
             let tx_sync = tx.clone();

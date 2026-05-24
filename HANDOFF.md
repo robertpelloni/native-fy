@@ -1,24 +1,25 @@
-# HANDOFF: Native-fy UI Engine (v0.31.0)
+# HANDOFF: Native-fy UI Engine (v0.35.0)
 
 ## Session Summary
-This session successfully integrated native host system metrics into the autonomous resource orchestration logic. The engine is now "system-aware," meaning it can dynamically throttle its resource consumption based on global CPU and memory pressure, significantly increasing deployment readiness for shared or constrained environments.
+This session successfully modularized the core engine architecture, transitioning from a monolithic `main.rs` to a structured multi-module layout. This significantly improves maintainability and prepares the system for further expansion (like vector graphics or new language bindings).
 
 ## Architectural Shifts
-- **Host Introspection:** Integrated the `sysinfo` crate, allowing the Rust core to retrieve real-time host telemetry.
-- **System-Aware Scaling:** The autonomous task scheduler in `src/runtime.js` now combines engine-level FPS metrics with host-level CPU metrics to make scaling decisions.
-- **Scaling Thresholds:**
-  - **Scale UP:** FPS > 55 AND CPU < 70%.
-  - **Scale DOWN:** FPS < 30 OR CPU > 90%.
-- **Bridge Expansion:** Added `NativeUI.getSystemMetrics()` to provide the JS layer with `cpu_usage`, `total_mem`, and `used_mem`.
+- **Module Separation:**
+  - `src/main.rs`: Lightweight entry point, handles process lifecycle and headless benchmarks.
+  - `src/app.rs`: Manages the Winit event loop, UI command processing, and application state (`NativefyApp`).
+  - `src/render.rs`: Encapsulates all WGPU and Glyphon rendering logic (`RenderState`).
+  - `src/stats.rs`: Unified module for telemetry structures (`AppStats`) and disk-based logging.
+  - `src/monitor.rs`: Native background thread for autonomous resource scaling.
+  - `src/runtime.rs`: QuickJS scripting bridge.
 
 ## State of the Repository
-- **Version:** 0.31.0.
-- **Audit:** A comprehensive Deployment Readiness Audit (`PERFORMANCE_AUDIT.md`) has been conducted and passed.
-- **Reliability:** The engine handles both engine-level load (high node churn) and host-level load (CPU pressure) autonomously.
+- **Version:** 0.35.0.
+- **Organization:** Clean separation of concerns between rendering, application logic, and scripting.
+- **Pipeline:** Unified `npm run pipeline` verified as functional with the new modular structure.
 
 ## Next Steps for Successor Agent
-1. **Network Throttling:** Implement bandwidth-aware asset loading in the `fetch` bridge.
-2. **GPU Memory Introspection:** Expand system metrics to include dedicated GPU memory usage via `wgpu` diagnostics.
-3. **Multi-Process Isolation:** Explore moving the `QuickJS` runtime into a separate process/worker to prevent logic spikes from affecting the rendering frame-rate.
+1. **SVG Support:** Implement path-based rendering in `src/render.rs` using a library like `vello`.
+2. **UI Component Expansion:** Build more complex native primitives in `src/app.rs` to reduce bridge crossing.
+3. **Advanced Eviction:** Refactor the LRU policy in `src/render.rs` to use weighted costs (size * frequency) for even better memory safety.
 
-**THE ENGINE IS NOW SYSTEM-AWARE. PROCEED TO DEPLOYMENT.**
+**ARCHITECTURE IS MODULAR. PROCEED TO EXPANSION.**
