@@ -1,8 +1,9 @@
 mod layout;
 mod ui_gen;
 mod runtime;
+mod monitor;
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Instant, Duration};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -26,12 +27,14 @@ use glyphon::{
 const INITIAL_MAX_NODES: usize = 1024;
 const LOG_FILE: &str = "app.log";
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, Clone, Copy, Default)]
 struct AppStats {
     fps: u32,
     layout_time_micros: u64,
     node_count: usize,
     frame_time_micros: u64,
+    bridge_time_micros: u64,
+    render_time_micros: u64,
 }
 
 fn log_error(msg: &str) {
@@ -476,9 +479,10 @@ impl RenderState {
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         // Update stats text
+        let version = env!("CARGO_PKG_VERSION");
         let stats_text = format!(
-            "MONITORING DASHBOARD | v0.26.0 | Status: HEALTHY | FPS: {} | Layout: {}µs | Nodes: {}",
-            stats.fps, stats.layout_time_micros, stats.node_count
+            "MONITORING DASHBOARD | v{} | Status: HEALTHY | FPS: {} | Bridge: {}µs | Layout: {}µs | Render: {}µs | Nodes: {}",
+            version, stats.fps, stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count
         );
         let stats_buffer = self.stats_buffer.get_or_insert_with(|| {
             glyphon::Buffer::new(&mut self.font_system, Metrics::new(12.0, 16.0))
@@ -572,10 +576,14 @@ impl RenderState {
         if self.text_buffers.len() > self.text_eviction_threshold {
             let mut entries: Vec<_> = self.text_buffers.iter().map(|(k, v)| (*k, v.1)).collect();
             entries.sort_by_key(|&(_, last_used)| last_used);
-            for i in 0..50 {
+            let evict_count = (self.text_eviction_threshold / 4).max(1);
+            for i in 0..evict_count.min(entries.len()) {
                 self.text_buffers.remove(&entries[i].0);
             }
-            println!("Memory: Evicted 50 text buffers (LRU).");
+            #[cfg(debug_assertions)]
+            if !std::env::var("PROD_MODE").is_ok() {
+                println!("Memory: Evicted {} text buffers (LRU).", evict_count);
+            }
         }
         for (id, text, _, _, width, height) in &text_data {
             let (buffer, last_used) = self.text_buffers.entry(*id).or_insert_with(|| {
@@ -639,17 +647,18 @@ impl RenderState {
         let mut text_areas = Vec::new();
 
         // Dashboard or Overlay Stats
+        let version = env!("CARGO_PKG_VERSION");
         let stats_text = if std::env::var("PROD_MODE").is_ok() {
             String::new()
         } else if std::env::var("DASHBOARD_MODE").is_ok() {
             format!(
-                "MONITORING DASHBOARD | v0.25.0 | Status: HEALTHY | FPS: {} | Layout: {}µs | Nodes: {}",
-                stats.fps, stats.layout_time_micros, stats.node_count
+                "MONITORING DASHBOARD | v{} | Status: HEALTHY | FPS: {} | Layout: {}µs | Nodes: {}",
+                version, stats.fps, stats.layout_time_micros, stats.node_count
             )
         } else {
             format!(
-                "v0.25.0 | FPS: {} | Layout: {}µs | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
-                stats.fps, stats.layout_time_micros, stats.node_count
+                "v{} | FPS: {} | Layout: {}µs | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
+                version, stats.fps, stats.layout_time_micros, stats.node_count
             )
         };
 
@@ -772,8 +781,12 @@ impl RenderState {
 
         output.present();
 
-        let render_duration = render_start.elapsed();
-        println!("Performance: Frame rendered in {:?}", render_duration);
+        let _render_duration = render_start.elapsed();
+        // Skip per-frame console logging in production/performance runs
+        #[cfg(debug_assertions)]
+        if !std::env::var("PROD_MODE").is_ok() {
+             println!("Performance: Frame rendered in {:?}", _render_duration);
+        }
 
         Ok(())
     }
@@ -821,6 +834,8 @@ impl RenderState {
 struct NativefyApp {
     window: Option<Arc<Window>>,
     pub fps_val: Arc<AtomicU32>,
+    pub sys: Arc<Mutex<sysinfo::System>>,
+    pub current_stats: Arc<Mutex<AppStats>>,
     render_state: Option<RenderState>,
     layout_engine: Option<LayoutEngine>,
     root_id: Option<taffy::prelude::NodeId>,
@@ -844,6 +859,8 @@ impl Default for NativefyApp {
         Self {
             window: None,
             fps_val: Arc::new(AtomicU32::new(0)),
+            sys: Arc::new(Mutex::new(sysinfo::System::new_all())),
+            current_stats: Arc::new(Mutex::new(AppStats::default())),
             render_state: None,
             layout_engine: None,
             root_id: None,
@@ -887,14 +904,26 @@ impl ApplicationHandler for NativefyApp {
             let layout_start = Instant::now();
             let root_id = ui_gen::generate_ui_tree(&mut engine);
             let _ = engine.compute(root_id);
-            let layout_duration = layout_start.elapsed();
-            println!("Performance: Initial layout computed in {:?}", layout_duration);
+            let _layout_duration = layout_start.elapsed();
+            #[cfg(debug_assertions)]
+            if !std::env::var("PROD_MODE").is_ok() {
+                println!("Performance: Initial layout computed in {:?}", _layout_duration);
+            }
 
             self.layout_engine = Some(engine);
             self.root_id = Some(root_id);
 
+            // Initialize Monitor
+            let monitor = monitor::Monitor::new(
+                self.ui_tx.clone(),
+                self.fps_val.clone(),
+                self.sys.clone(),
+                self.current_stats.clone()
+            );
+            monitor.spawn();
+
             // Initialize QuickJS
-            let runtime = JsRuntime::new(self.ui_tx.clone(), self.fps_val.clone());
+            let runtime = JsRuntime::new(self.ui_tx.clone(), self.fps_val.clone(), self.sys.clone());
             let mut bridge_code = include_str!("runtime.js").to_string();
             if std::env::var("PROD_MODE").is_ok() {
                 bridge_code = format!("globalThis.PROD_MODE = true; \n {}", bridge_code);
@@ -922,7 +951,9 @@ impl ApplicationHandler for NativefyApp {
 
             self.js_runtime = Some(runtime);
 
-            println!("Window, Wgpu, and QuickJS successfully initialized!");
+            if !std::env::var("PROD_MODE").is_ok() {
+                println!("Window, Wgpu, and QuickJS successfully initialized!");
+            }
         }
     }
 
@@ -945,6 +976,7 @@ impl ApplicationHandler for NativefyApp {
                 }
             }
             WindowEvent::RedrawRequested => {
+                let _loop_start = Instant::now();
                 // Update FPS
                 self.frame_count += 1;
                 let now = Instant::now();
@@ -955,6 +987,7 @@ impl ApplicationHandler for NativefyApp {
                     self.last_fps_update = now;
                 }
 
+                let bridge_start = Instant::now();
                 // Process UI commands in batch
                 let mut recompute = false;
                 let mut command_count = 0;
@@ -988,6 +1021,10 @@ impl ApplicationHandler for NativefyApp {
                             }
                         }
                         UiCommand::CreateNativeButton { text, styles } => {
+                            #[cfg(debug_assertions)]
+                            if !std::env::var("PROD_MODE").is_ok() {
+                                println!("Runtime: Creating native button '{}'", text);
+                            }
                             if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
                                 let new_node = Node {
                                     node_type: "Box".to_string(), // Native button is a box with text
@@ -1011,7 +1048,9 @@ impl ApplicationHandler for NativefyApp {
                             }
                         }
                         UiCommand::UpdateImage { url, data } => {
-                            println!("Runtime: Loading image asset from {}", url);
+                            if !std::env::var("PROD_MODE").is_ok() {
+                                println!("Runtime: Loading image asset from {}", url);
+                            }
                             if let (Some(state), Ok(img)) = (self.render_state.as_mut(), image::load_from_memory(&data)) {
                                 let rgba = img.to_rgba8();
                                 let (width, height) = rgba.dimensions();
@@ -1087,10 +1126,13 @@ impl ApplicationHandler for NativefyApp {
                                     let mut entries: Vec<_> = state.textures.iter().map(|(k, v)| (k.clone(), v.1)).collect();
                                     entries.sort_by_key(|&(_, last_used)| last_used);
                                     let evict_count = (state.texture_eviction_threshold / 5).max(1);
-                                    for i in 0..evict_count {
+                                    for i in 0..evict_count.min(entries.len()) {
                                         state.textures.remove(&entries[i].0);
                                     }
-                                    println!("Memory: Evicted {} textures (LRU).", evict_count);
+                                    #[cfg(debug_assertions)]
+                                    if !std::env::var("PROD_MODE").is_ok() {
+                                        println!("Memory: Evicted {} textures (LRU).", evict_count);
+                                    }
                                 }
                                 state.textures.insert(url, (bind_group, Instant::now()));
                             }
@@ -1099,7 +1141,9 @@ impl ApplicationHandler for NativefyApp {
                             println!("Health Check: Bridge is responsive.");
                         }
                         UiCommand::Reload => {
-                            println!("Runtime: Reloading UI tree...");
+                            if !std::env::var("PROD_MODE").is_ok() {
+                                println!("Runtime: Reloading UI tree...");
+                            }
                             if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
                                 // Simple reload by clearing and re-generating
                                 let _ = ui_gen::generate_ui_tree(engine);
@@ -1129,7 +1173,9 @@ impl ApplicationHandler for NativefyApp {
                                 .status();
                         }
                         UiCommand::ScaleResources { batch_size, text_eviction_threshold, texture_eviction_threshold } => {
-                            println!("Runtime: Scaling resources (Batch: {}, Text: {}, Texture: {})", batch_size, text_eviction_threshold, texture_eviction_threshold);
+                            if !std::env::var("PROD_MODE").is_ok() {
+                                println!("Runtime: Scaling resources (Batch: {}, Text: {}, Texture: {})", batch_size, text_eviction_threshold, texture_eviction_threshold);
+                            }
                             self.batch_size = batch_size;
                             if let Some(state) = self.render_state.as_mut() {
                                 state.text_eviction_threshold = text_eviction_threshold;
@@ -1138,6 +1184,8 @@ impl ApplicationHandler for NativefyApp {
                         }
                     }
                 }
+
+                let bridge_duration = bridge_start.elapsed();
 
                 let mut layout_duration = Duration::from_micros(0);
                 if recompute {
@@ -1149,25 +1197,32 @@ impl ApplicationHandler for NativefyApp {
                 }
 
                 if let (Some(state), Some(engine), Some(root_id)) = (self.render_state.as_mut(), self.layout_engine.as_ref(), self.root_id) {
-                    let stats = AppStats {
+                    let render_start_hot = Instant::now();
+
+                    let mut stats = AppStats {
                         fps: self.fps,
                         layout_time_micros: layout_duration.as_micros() as u64,
                         node_count: engine.node_count(),
                         frame_time_micros: now.duration_since(self.last_fps_update).as_micros() as u64 / (self.frame_count.max(1) as u64),
+                        bridge_time_micros: bridge_duration.as_micros() as u64,
+                        render_time_micros: 0,
                     };
 
                     // Record history for dashboard
                     if self.frame_count % 10 == 0 {
-                        self.perf_history.push(AppStats {
-                             fps: stats.fps,
-                             layout_time_micros: stats.layout_time_micros,
-                             node_count: stats.node_count,
-                             frame_time_micros: stats.frame_time_micros,
-                        });
+                        self.perf_history.push(stats);
                         if self.perf_history.len() > 100 { self.perf_history.remove(0); }
                     }
 
                     let screenshot_path = self.pending_screenshot.take();
+                    let render_duration = render_start_hot.elapsed();
+                    stats.render_time_micros = render_duration.as_micros() as u64;
+
+                    {
+                        let mut shared_stats = self.current_stats.lock().unwrap();
+                        *shared_stats = stats;
+                    }
+
                     if self.dashboard_active {
                         // Render visualization instead of standard UI
                         let mut dashboard_nodes = Vec::new();
@@ -1193,6 +1248,16 @@ impl ApplicationHandler for NativefyApp {
                                 pos: [x, 400.0 - lat_h],
                                 size: [5.0, lat_h],
                                 color: [1.0, 0.5, 0.0, 1.0],
+                                mode: 0,
+                                _padding: [0.0; 3],
+                            });
+
+                            // Bridge Latency Bar
+                            let bridge_h = (entry.bridge_time_micros as f32 / 2000.0) * 50.0;
+                            dashboard_nodes.push(NodeData {
+                                pos: [x, 500.0 - bridge_h],
+                                size: [5.0, bridge_h],
+                                color: [0.0, 0.5, 1.0, 1.0],
                                 mode: 0,
                                 _padding: [0.0; 3],
                             });

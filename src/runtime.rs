@@ -37,7 +37,7 @@ pub struct JsRuntime {
 }
 
 impl JsRuntime {
-    pub fn new(tx: Sender<UiCommand>, fps_val: Arc<AtomicU32>) -> Self {
+    pub fn new(tx: Sender<UiCommand>, fps_val: Arc<AtomicU32>, sys: Arc<Mutex<sysinfo::System>>) -> Self {
         let runtime = Runtime::new().expect("failed to create QuickJS runtime");
         let context = Context::full(&runtime).expect("failed to create QuickJS context");
 
@@ -156,9 +156,9 @@ impl JsRuntime {
                 stats
             })).unwrap();
 
-            let sys = Arc::new(Mutex::new(sysinfo::System::new_all()));
+            let sys_clone = sys.clone();
             globals.set("_native_get_system_metrics", Function::new(ctx.clone(), move || {
-                let mut sys = sys.lock().unwrap();
+                let mut sys = sys_clone.lock().unwrap();
                 sys.refresh_cpu_usage();
                 sys.refresh_memory();
 
@@ -205,7 +205,8 @@ mod tests {
     fn test_js_node_creation_performance() {
         let (tx, rx) = mpsc::channel();
         let fps = Arc::new(AtomicU32::new(60));
-        let runtime = JsRuntime::new(tx, fps);
+        let sys = Arc::new(Mutex::new(sysinfo::System::new_all()));
+        let runtime = JsRuntime::new(tx, fps, sys);
 
         let counts = [100, 500, 1000];
         for count in counts {

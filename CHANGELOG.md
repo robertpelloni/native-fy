@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.32.0] - 2026-05-23
+- Implemented high-performance Native Monitoring Module in Rust (`src/monitor.rs`).
+- Instrumented core execution loop with granular Bridge, Layout, and Render timings.
+- Enhanced Native Dashboard with detailed loop telemetry and scaling status.
+- Consolidated auto-scaling logic into Rust to reduce script overhead and latency.
+- Refactored engine logging to use conditional debug hooks for production efficiency.
+
 ## [0.31.0] - 2026-05-23
 - Integrated `sysinfo` for native host resource introspection.
 - Implemented System-Aware Auto-Scaling logic in the autonomous scheduler.

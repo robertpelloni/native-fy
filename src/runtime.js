@@ -90,37 +90,15 @@ console.log("QuickJS: NativeUI bridge initialized.");
 const SCHEDULER_INTERVAL = 60000; // 60 seconds
 
 function runAutonomousMaintenance() {
-    console.log("Scheduler: Running autonomous maintenance...");
+    // Basic health heartbeat and diagnostic checks
+    // Resource orchestration is now handled by the Native Monitor (src/monitor.rs)
     NativeUI.healthCheck();
 
-    const meta = NativeUI.getMetadata();
     const stats = NativeUI.getPerformanceStats();
-    const sys = NativeUI.getSystemMetrics();
-    console.log(`Scheduler: Active on version ${meta.version} | Stats: FPS=${stats.fps} | CPU: ${sys.cpu_usage.toFixed(1)}%`);
-
     if (stats.fps < 10) {
-        console.warn("Scheduler: Performance drop detected. Capturing diagnostic screenshot...");
+        console.warn("Scheduler: Critical performance drop. Capturing diagnostic screenshot...");
         NativeUI.screenshot("perf_diag.png");
     }
-
-    // System-Aware Dynamic Auto-Scaling Trigger
-    let batchSize = 100;
-    let textThreshold = 200;
-    let textureThreshold = 50;
-
-    if (stats.fps > 55 && sys.cpu_usage < 70) {
-        // High headroom: Scale UP
-        batchSize = 500;
-        textThreshold = 1000;
-        textureThreshold = 200;
-    } else if (stats.fps < 30 || sys.cpu_usage > 90) {
-        // High pressure: Scale DOWN
-        batchSize = 50;
-        textThreshold = 100;
-        textureThreshold = 20;
-    }
-
-    NativeUI.scaleResources(batchSize, textThreshold, textureThreshold);
 }
 
 setInterval(runAutonomousMaintenance, SCHEDULER_INTERVAL);

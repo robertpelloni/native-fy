@@ -45,18 +45,14 @@ function getScalingCommand(metrics) {
 }
 
 function monitorHealth() {
-    console.log("Starting Continuous Health Monitor with Auto-Scaling...");
+    console.log("Starting Continuous Health Monitor (Telemetry Mode)...");
 
     setInterval(() => {
         if (fs.existsSync(PERF_FILE)) {
             try {
                 const metrics = JSON.parse(fs.readFileSync(PERF_FILE, 'utf8'));
-                const scaleCmd = getScalingCommand(metrics);
-
-                if (scaleCmd) {
-                    console.log(`[Health] Intended Scale Command: ${scaleCmd}`);
-                    // In the real system, this is wired via the JS runtime's internal scheduler.
-                }
+                // External monitor now primarily observes and triggers recovery heartbeats
+                // Auto-scaling is managed internally by the Native Monitor module
 
                 let unhealthy = false;
                 Object.keys(THRESHOLDS).forEach(key => {
