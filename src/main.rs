@@ -887,20 +887,16 @@ impl ApplicationHandler for NativefyApp {
                 .with_title("Native-fy UI Engine")
                 .with_inner_size(winit::dpi::LogicalSize::new(800.0, 600.0));
 
-            let window_res = event_loop.create_window(window_attributes);
-            if let Ok(window) = window_res {
-                let window = Arc::new(window);
-                self.window = Some(window.clone());
+            let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
+            self.window = Some(window.clone());
 
-                let render_state_res = pollster::block_on(RenderState::new(window));
-                match render_state_res {
-                    Ok(state) => self.render_state = Some(state),
-                    Err(e) => {
-                        log_error(&format!("Failed to initialize render state: {}", e));
-                    }
+            let render_state_res = pollster::block_on(RenderState::new(window));
+            match render_state_res {
+                Ok(state) => self.render_state = Some(state),
+                Err(e) => {
+                    log_error(&format!("Failed to initialize render state: {}", e));
+                    return;
                 }
-            } else {
-                log_error("Failed to create window (Headless environment detected).");
             }
 
             let mut engine = LayoutEngine::new();
@@ -1284,22 +1280,7 @@ impl ApplicationHandler for NativefyApp {
                          println!("Benchmark: Exported metrics to perf_metrics.json");
                          event_loop.exit();
                     }
-                } else if std::env::var("BENCHMARK_MODE").is_ok() {
-                     // Headless export even if render state failed
-                     let stats = AppStats {
-                         fps: 0,
-                         layout_time_micros: 0,
-                         node_count: 0,
-                         frame_time_micros: 0,
-                         bridge_time_micros: 0,
-                         render_time_micros: 0,
-                     };
-                     let json = serde_json::to_string_pretty(&stats).unwrap();
-                     std::fs::write("perf_metrics.json", json).unwrap();
-                     println!("Benchmark: Exported fallback metrics to perf_metrics.json");
-                     event_loop.exit();
                 }
-
                 if let Some(window) = self.window.as_ref() {
                     window.request_redraw();
                 }
@@ -1324,39 +1305,10 @@ fn main() {
 
     println!("Initializing Native-fy Windowing Environment...");
 
-    if std::env::var("BENCHMARK_MODE").is_ok() {
-        let mut engine = LayoutEngine::new();
-        let start = Instant::now();
-        let root_id = ui_gen::generate_ui_tree(&mut engine);
-        let _ = engine.compute(root_id);
-        let layout_time = start.elapsed().as_micros() as u64;
-
-        let stats = AppStats {
-            fps: 0,
-            layout_time_micros: layout_time,
-            node_count: engine.node_count(),
-            frame_time_micros: 0,
-            bridge_time_micros: 0,
-            render_time_micros: 0,
-        };
-        let json = serde_json::to_string_pretty(&stats).unwrap();
-        std::fs::write("perf_metrics.json", json).unwrap();
-        println!("Headless Benchmark: Calculated real layout timings.");
-        return;
-    }
-
     // Initialize winit event loop
-    let event_loop_res = EventLoop::new();
-    let event_loop = match event_loop_res {
-        Ok(el) => el,
-        Err(e) => {
-            log_error(&format!("Failed to create event loop: {}", e));
-            return;
-        }
-    };
-
+    let event_loop = EventLoop::new().unwrap();
     let mut app = NativefyApp::default();
 
     println!("Starting event loop...");
-    let _ = event_loop.run_app(&mut app);
+    event_loop.run_app(&mut app).unwrap();
 }

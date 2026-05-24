@@ -50,16 +50,3 @@ To run the application with live performance monitoring:
 node scripts/monitor.js
 ```
 *This will log system resources and engine metrics to `stability.log`.*
-
-## Staging Deployment
-To promote a release candidate to the staging environment:
-1. **Promote Binary:**
-   ```bash
-   npm run deploy:staging
-   ```
-2. **Execute Staging Tests:**
-   ```bash
-   npm run test:staging
-   ```
-3. **Review Results:**
-   Check `STAGING_REPORT.md` for integration and artifact integrity status.
