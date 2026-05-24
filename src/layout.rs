@@ -54,6 +54,13 @@ impl LayoutEngine {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.taffy.clear();
+        self.node_metadata.clear();
+        self.node_types.clear();
+        self.node_values.clear();
+    }
+
     fn parse_length(val: &str) -> Result<LengthPercentageAuto, ValidationError> {
         let val = val.trim();
         if val == "auto" {

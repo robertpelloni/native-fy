@@ -35,11 +35,11 @@ function runIntegrationTest() {
     });
 
     // 2. Verify Rendering Pipeline batching logic availability
-    const renderRust = fs.readFileSync('src/render.rs', 'utf8');
-    if (renderRust.includes('while start_idx < nodes.len()')) {
-        console.log("[OK] Texture batching logic verified in render module.");
+    const mainRust = fs.readFileSync('src/main.rs', 'utf8');
+    if (mainRust.includes('while start_idx < nodes.len()')) {
+        console.log("[OK] Texture batching logic verified in main rendering loop.");
     } else {
-        console.error("[FAIL] Texture batching logic missing from render.rs.");
+        console.error("[FAIL] Texture batching logic missing from main.rs.");
         passed = false;
     }
 

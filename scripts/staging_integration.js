@@ -37,7 +37,7 @@ function runIntegration() {
     log("[OK] LRU Cache Policies verified.");
 
     log("\n## Final Assessment");
-    log("Staging behavior is consistent with local performance audits. The v0.35.0 artifact is verified for promotion.");
+    log("Staging behavior is consistent with local performance audits. The artifact is verified for promotion.");
 }
 
 runIntegration();

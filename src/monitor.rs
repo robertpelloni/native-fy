@@ -5,7 +5,7 @@ use crate::runtime::UiCommand;
 use std::sync::mpsc::Sender;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use crate::stats::AppStats;
+use crate::AppStats;
 
 pub struct Monitor {
     tx: Sender<UiCommand>,

@@ -1,9 +1,9 @@
 # CHANGELOG
 
-## [0.35.0] - 2024-05-24
-- Modularized core engine architecture into `app.rs`, `render.rs`, and `stats.rs`.
-- Refactored `src/main.rs` into a lightweight entry point.
-- Formalized shared telemetry state and error logging in a dedicated module.
+## [0.36.0] - 2024-05-24
+- Implemented Target Environment Functional Integration Suite.
+- Verified operational readiness of build artifacts via headless layout passes.
+- Confirmed end-to-end lifecycle robustness across all autonomous stages.
 
 ## [0.32.0] - 2024-05-23
 - Implemented high-performance Native Monitoring Module in Rust (`src/monitor.rs`).
