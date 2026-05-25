@@ -11,6 +11,8 @@
     "test:e2e": "node scripts/e2e_test.js",
     "test:visual": "node scripts/visual_test.js",
     "test:integration": "node scripts/integration_test.js",
+    "test:load": "node scripts/sustained_load_test.js",
+    "test:full-integration": "node scripts/functional_integration.js",
     "test:staging": "node scripts/staging_integration.js",
     "deploy:staging": "node scripts/stage_deployment.js",
     "start": "PROD_MODE=1 cargo run --release",

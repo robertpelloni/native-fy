@@ -16,7 +16,9 @@ function runIntegrationTest() {
         'toggleDashboard',
         'healthCheck',
         'getMetadata',
-        'getPerformanceStats'
+        'getPerformanceStats',
+        'createSvg',
+        'scaleResources'
     ];
 
     let passed = true;
