@@ -755,7 +755,7 @@ impl RenderState {
     }
 
     pub fn collect_nodes(
-        &self,
+        &mut self,
         engine: &LayoutEngine,
         id: taffy::prelude::NodeId,
         parent_x: f32,
@@ -770,16 +770,34 @@ impl RenderState {
 
             let node_type = engine.get_type(id);
             let is_image = node_type == Some(&"Image".to_string());
+            let is_svg = node_type == Some(&"Svg".to_string());
+
+            let mut texture_url = None;
+
+            if is_image {
+                texture_url = engine.get_value(id).cloned();
+            } else if is_svg {
+                if let Some(svg_content) = engine.get_value(id) {
+                    let cache_key = format!("svg:{:?}", id);
+                    if !self.textures.contains_key(&cache_key) {
+                        // Render SVG to texture
+                        if let Some(rgba) = self.render_svg_to_rgba(svg_content, layout.size.width, layout.size.height) {
+                            self.upload_texture(cache_key.clone(), &rgba, layout.size.width as u32, layout.size.height as u32);
+                        }
+                    }
+                    texture_url = Some(cache_key);
+                }
+            }
 
             nodes.push(NodeData {
                 pos: [x, y],
                 size: [layout.size.width, layout.size.height],
-                color: [0.5, 0.6, 0.7, 1.0], // Placeholder color
-                mode: if is_image { 1 } else { 0 },
+                color: if is_image || is_svg { [1.0, 1.0, 1.0, 1.0] } else { [0.5, 0.6, 0.7, 1.0] },
+                mode: if is_image || is_svg { 1 } else { 0 },
                 _padding: [0.0; 3],
             });
 
-            node_textures.push(if is_image { engine.get_value(id).cloned() } else { None });
+            node_textures.push(texture_url);
 
             if let Some(text) = engine.get_text(id) {
                 text_data.push((id, text.clone(), x, y, layout.size.width, layout.size.height));
@@ -791,5 +809,94 @@ impl RenderState {
                 }
             }
         }
+    }
+
+    fn render_svg_to_rgba(&self, svg_content: &str, width: f32, height: f32) -> Option<Vec<u8>> {
+        let opt = usvg::Options::default();
+        let rtree = usvg::Tree::from_str(svg_content, &opt).ok()?;
+
+        let mut pixmap = tiny_skia::Pixmap::new(width as u32, height as u32)?;
+        resvg::render(&rtree, tiny_skia::Transform::default(), &mut pixmap.as_mut());
+
+        Some(pixmap.data().to_vec())
+    }
+
+    fn upload_texture(&mut self, url: String, rgba: &[u8], width: u32, height: u32) {
+        let texture_size = wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some(&url),
+            size: texture_size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        self.queue.write_texture(
+            wgpu::ImageCopyTexture {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            rgba,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * width),
+                rows_per_image: Some(height),
+            },
+            texture_size,
+        );
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let sampler = self.device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Texture Bind Group"),
+            layout: &self.bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: self.globals_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: self.node_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+            ],
+        });
+
+        if self.textures.len() > self.texture_eviction_threshold {
+            let mut entries: Vec<_> = self.textures.iter().map(|(k, v)| (k.clone(), v.1)).collect();
+            entries.sort_by_key(|&(_, last_used)| last_used);
+            let evict_count = (self.texture_eviction_threshold / 5).max(1);
+            for i in 0..evict_count.min(entries.len()) {
+                self.textures.remove(&entries[i].0);
+            }
+        }
+        self.textures.insert(url, (bind_group, Instant::now()));
     }
 }

@@ -51,6 +51,9 @@ const NativeUI = {
     scaleResources: (batchSize, textThreshold, textureThreshold) => {
         _native_scale_resources(batchSize, textThreshold, textureThreshold);
     },
+    createSvg: (content, styles) => {
+        return _native_create_svg(content, styles);
+    },
     Components: {
         Button: (text, onClick, styles = {}) => {
             // Use native button implementation for better efficiency
@@ -67,6 +70,9 @@ const NativeUI = {
                 padding: "20px",
                 ...styles
             }, text);
+        },
+        Svg: (content, styles = {}) => {
+            return NativeUI.createSvg(content, styles);
         },
         Card: (children, styles = {}) => {
             return NativeUI.createNode("Box", {

@@ -22,6 +22,7 @@ pub enum UiCommand {
     HealthCheck,
     Reload,
     RunPipeline,
+    Svg { content: String, styles: HashMap<String, String> },
     Screenshot { path: String },
     ToggleDashboard,
     ScaleResources {
@@ -113,6 +114,19 @@ impl JsRuntime {
             let tx_reload = tx.clone();
             globals.set("_native_reload", Function::new(ctx.clone(), move || {
                 let _ = tx_reload.send(UiCommand::Reload);
+            })).unwrap();
+
+            let tx_svg = tx.clone();
+            globals.set("_native_create_svg", Function::new(ctx.clone(), move |content: String, _styles: rquickjs::Object| {
+                let mut styles = HashMap::new();
+                for key_res in _styles.keys::<String>() {
+                    if let Ok(key) = key_res {
+                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                            styles.insert(key, val);
+                        }
+                    }
+                }
+                let _ = tx_svg.send(UiCommand::Svg { content, styles });
             })).unwrap();
 
             let tx_pipe = tx.clone();

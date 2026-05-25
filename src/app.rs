@@ -136,6 +136,8 @@ impl ApplicationHandler for NativefyApp {
                     console.log("UI: Screenshot triggered from button");
                     NativeUI.screenshot("manual_capture.png");
                 }, { margin: "10px" });
+
+                NativeUI.Components.Svg('<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>', { width: "100px", height: "100px", margin: "10px" });
             "#);
 
             self.js_runtime = Some(runtime);
@@ -356,6 +358,31 @@ impl ApplicationHandler for NativefyApp {
                                 .arg("run")
                                 .arg("pipeline")
                                 .status();
+                        }
+                        UiCommand::Svg { content, styles } => {
+                            if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
+                                let width = styles.get("width").and_then(|v| v.strip_suffix("px")).and_then(|v| v.parse().ok()).unwrap_or(100.0);
+                                let height = styles.get("height").and_then(|v| v.strip_suffix("px")).and_then(|v| v.parse().ok()).unwrap_or(100.0);
+                                let new_node = Node {
+                                    node_type: "Svg".to_string(),
+                                    rect: AstRect { x: 0.0, y: 0.0, width, height },
+                                    styles: FlexStyles {
+                                        flex_direction: "row".to_string(),
+                                        padding: styles.get("padding").cloned().unwrap_or("0px".to_string()),
+                                        margin: styles.get("margin").cloned().unwrap_or("0px".to_string()),
+                                        align_items: "center".to_string(),
+                                        justify_content: "center".to_string(),
+                                        unsupported: std::collections::HashMap::new(),
+                                    },
+                                    text: None,
+                                    value: Some(content),
+                                    children: vec![],
+                                };
+                                if let Ok(new_id) = engine.build_tree(&new_node) {
+                                    let _ = engine.add_child(root_id, new_id);
+                                }
+                                recompute = true;
+                            }
                         }
                         UiCommand::SyncProtocol => {
                             println!("Runtime: Triggering Protocol Sync...");

@@ -61,3 +61,5 @@
 ## Polish & Tooling
 51. [DONE] Refactor `scripts/compiler_agent.js` to support separate UI module generation (`src/ui_gen.rs`).
 52. [DONE] Add `nativefy` convenience script to `package.json`.
+53. [DONE] Implement SVG/Vector graphics support using `resvg` and `tiny-skia`.
+54. [DONE] Add `NativeUI.createSvg` and `Components.Svg` to the JavaScript bridge.

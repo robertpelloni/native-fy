@@ -22,7 +22,7 @@ pub struct FlexStyles {
 
 #[derive(Debug, Clone)]
 pub struct Node {
-    pub node_type: String, // Box, Text, Image, Input, List
+    pub node_type: String, // Box, Text, Image, Input, List, Svg
     pub rect: AstRect,
     pub styles: FlexStyles,
     pub text: Option<String>,
@@ -139,7 +139,7 @@ impl LayoutEngine {
     pub fn build_tree(&mut self, node: &Node) -> Result<NodeId, ValidationError> {
         // Validate Node Type
         match node.node_type.as_str() {
-            "Box" | "Text" | "Image" | "Input" | "List" => {}
+            "Box" | "Text" | "Image" | "Input" | "List" | "Svg" => {}
             _ => return Err(ValidationError::UnsupportedNodeType(node.node_type.clone())),
         }
 
