@@ -9,7 +9,7 @@ function syncProtocol() {
     console.log("Starting Protocol Synchronization...");
 
     if (!fs.existsSync(VERSION_FILE)) {
-        fs.writeFileSync(VERSION_FILE, "0.14.0\n");
+        fs.writeFileSync(VERSION_FILE, "0.36.0\n");
     }
     const version = fs.readFileSync(VERSION_FILE, 'utf8').trim();
     console.log(`Current Version: ${version}`);
