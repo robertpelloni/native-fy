@@ -99,9 +99,13 @@ globalThis._native_on_event = (type, data) => {
 console.log("QuickJS: NativeUI bridge initialized.");
 
 // Autonomous Task Scheduler
-const SCHEDULER_INTERVAL = 60000; // 60 seconds
+const SCHEDULER_INTERVAL = globalThis.VALIDATION_MODE ? 5000 : 60000;
+let _maintenanceIteration = 0;
 
 function runAutonomousMaintenance() {
+    _maintenanceIteration++;
+    console.log(`Scheduler: Running autonomous maintenance pass (Iter: ${_maintenanceIteration})`);
+
     // Basic health heartbeat and diagnostic checks
     // Resource orchestration is now handled by the Native Monitor (src/monitor.rs)
     NativeUI.healthCheck();
@@ -110,6 +114,12 @@ function runAutonomousMaintenance() {
     if (stats.fps < 10) {
         console.warn("Scheduler: Critical performance drop. Capturing diagnostic screenshot...");
         NativeUI.screenshot("perf_diag.png");
+    }
+
+    // Trigger Protocol Sync every 5 minutes (5 iterations)
+    if (_maintenanceIteration % 5 === 0) {
+        console.log("Scheduler: Triggering scheduled protocol synchronization.");
+        NativeUI.syncProtocol();
     }
 }
 

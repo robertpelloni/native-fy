@@ -133,8 +133,13 @@ impl RenderState {
             .next()
             .unwrap_or(surface_caps.formats[0]);
 
+        let mut usage = wgpu::TextureUsages::RENDER_ATTACHMENT;
+        if surface_caps.usages.contains(wgpu::TextureUsages::COPY_SRC) {
+            usage |= wgpu::TextureUsages::COPY_SRC;
+        }
+
         let config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            usage,
             format: surface_format,
             width: size.width,
             height: size.height,

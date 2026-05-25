@@ -117,6 +117,9 @@ impl ApplicationHandler for NativefyApp {
             if std::env::var("PROD_MODE").is_ok() {
                 bridge_code = format!("globalThis.PROD_MODE = true; \n {}", bridge_code);
             }
+            if std::env::var("VALIDATION_MODE").is_ok() {
+                bridge_code = format!("globalThis.VALIDATION_MODE = true; \n {}", bridge_code);
+            }
             runtime.eval(&bridge_code);
 
             // Wire bridge features to UI for verification
@@ -455,9 +458,7 @@ impl ApplicationHandler for NativefyApp {
                                 .status();
                         }
                         UiCommand::ScaleResources { batch_size, text_eviction_threshold, texture_eviction_threshold } => {
-                            if !std::env::var("PROD_MODE").is_ok() {
-                                println!("Runtime: Scaling resources (Batch: {}, Text: {}, Texture: {})", batch_size, text_eviction_threshold, texture_eviction_threshold);
-                            }
+                            println!("Runtime: Scaling resources (Batch: {}, Text: {}, Texture: {})", batch_size, text_eviction_threshold, texture_eviction_threshold);
                             self.batch_size = batch_size;
                             if let Some(state) = self.render_state.as_mut() {
                                 state.text_eviction_threshold = text_eviction_threshold;

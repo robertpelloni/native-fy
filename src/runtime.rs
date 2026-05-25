@@ -226,7 +226,10 @@ impl JsRuntime {
 
     pub fn eval(&self, source: &str) {
         self.context.with(|ctx| {
-            ctx.eval::<(), _>(source).expect("failed to evaluate JS");
+            let res: Result<(), _> = ctx.eval(source);
+            if let Err(e) = res {
+                eprintln!("JS Error: {:?}", e);
+            }
         });
     }
 
