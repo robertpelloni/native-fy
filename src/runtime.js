@@ -74,6 +74,12 @@ const NativeUI = {
         Svg: (content, styles = {}) => {
             return NativeUI.createSvg(content, styles);
         },
+        Input: (placeholder, styles = {}) => {
+            return _native_create_input(placeholder, styles);
+        },
+        List: (itemCount, styles = {}) => {
+            return _native_create_list(itemCount, styles);
+        },
         Card: (children, styles = {}) => {
             return NativeUI.createNode("Box", {
                 padding: "15px",

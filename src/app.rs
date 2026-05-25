@@ -211,6 +211,70 @@ impl ApplicationHandler for NativefyApp {
                                 recompute = true;
                             }
                         }
+                        UiCommand::CreateNativeInput { placeholder, styles } => {
+                            if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
+                                let new_node = Node {
+                                    node_type: "Input".to_string(),
+                                    rect: AstRect { x: 0.0, y: 0.0, width: 200.0, height: 40.0 },
+                                    styles: FlexStyles {
+                                        flex_direction: "row".to_string(),
+                                        padding: styles.get("padding").cloned().unwrap_or("5px 10px".to_string()),
+                                        margin: styles.get("margin").cloned().unwrap_or("5px".to_string()),
+                                        align_items: "center".to_string(),
+                                        justify_content: "flex-start".to_string(),
+                                        unsupported: std::collections::HashMap::new(),
+                                    },
+                                    text: None,
+                                    value: Some(placeholder),
+                                    children: vec![],
+                                };
+                                if let Ok(new_id) = engine.build_tree(&new_node) {
+                                    let _ = engine.add_child(root_id, new_id);
+                                }
+                                recompute = true;
+                            }
+                        }
+                        UiCommand::CreateNativeList { item_count, styles } => {
+                            if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
+                                let mut children = Vec::new();
+                                for i in 0..item_count {
+                                    children.push(Node {
+                                        node_type: "Box".to_string(),
+                                        rect: AstRect { x: 0.0, y: 0.0, width: 0.0, height: 30.0 },
+                                        styles: FlexStyles {
+                                            flex_direction: "row".to_string(),
+                                            padding: "5px".to_string(),
+                                            margin: "2px".to_string(),
+                                            align_items: "center".to_string(),
+                                            justify_content: "flex-start".to_string(),
+                                            unsupported: std::collections::HashMap::new(),
+                                        },
+                                        text: Some(format!("Item {}", i + 1)),
+                                        value: None,
+                                        children: vec![],
+                                    });
+                                }
+                                let new_node = Node {
+                                    node_type: "List".to_string(),
+                                    rect: AstRect { x: 0.0, y: 0.0, width: 200.0, height: 0.0 },
+                                    styles: FlexStyles {
+                                        flex_direction: "column".to_string(),
+                                        padding: styles.get("padding").cloned().unwrap_or("10px".to_string()),
+                                        margin: styles.get("margin").cloned().unwrap_or("5px".to_string()),
+                                        align_items: "stretch".to_string(),
+                                        justify_content: "flex-start".to_string(),
+                                        unsupported: std::collections::HashMap::new(),
+                                    },
+                                    text: None,
+                                    value: None,
+                                    children,
+                                };
+                                if let Ok(new_id) = engine.build_tree(&new_node) {
+                                    let _ = engine.add_child(root_id, new_id);
+                                }
+                                recompute = true;
+                            }
+                        }
                         UiCommand::CreateNativeButton { text, styles } => {
                             #[cfg(debug_assertions)]
                             if !std::env::var("PROD_MODE").is_ok() {

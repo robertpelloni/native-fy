@@ -14,6 +14,14 @@ pub enum UiCommand {
         text: String,
         styles: HashMap<String, String>,
     },
+    CreateNativeInput {
+        placeholder: String,
+        styles: HashMap<String, String>,
+    },
+    CreateNativeList {
+        item_count: u32,
+        styles: HashMap<String, String>,
+    },
     UpdateImage {
         url: String,
         data: Vec<u8>,
@@ -104,6 +112,32 @@ impl JsRuntime {
                     }
                 }
                 let _ = tx_btn.send(UiCommand::CreateNativeButton { text, styles });
+            })).unwrap();
+
+            let tx_input = tx.clone();
+            globals.set("_native_create_input", Function::new(ctx.clone(), move |placeholder: String, _styles: rquickjs::Object| {
+                let mut styles = HashMap::new();
+                for key_res in _styles.keys::<String>() {
+                    if let Ok(key) = key_res {
+                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                            styles.insert(key, val);
+                        }
+                    }
+                }
+                let _ = tx_input.send(UiCommand::CreateNativeInput { placeholder, styles });
+            })).unwrap();
+
+            let tx_list = tx.clone();
+            globals.set("_native_create_list", Function::new(ctx.clone(), move |item_count: u32, _styles: rquickjs::Object| {
+                let mut styles = HashMap::new();
+                for key_res in _styles.keys::<String>() {
+                    if let Ok(key) = key_res {
+                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                            styles.insert(key, val);
+                        }
+                    }
+                }
+                let _ = tx_list.send(UiCommand::CreateNativeList { item_count, styles });
             })).unwrap();
 
             let tx_health = tx.clone();
