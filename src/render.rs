@@ -449,8 +449,8 @@ impl RenderState {
         // Update stats text
         let version = env!("CARGO_PKG_VERSION");
         let stats_text = format!(
-            "MONITORING DASHBOARD | v{} | Status: HEALTHY | FPS: {} | Bridge: {}µs | Layout: {}µs | Render: {}µs | Nodes: {}",
-            version, stats.fps, stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count
+            "MONITORING DASHBOARD | v{} | Status: HEALTHY | FPS: {} | CPU: {:.1}% | Mem: {}MB | Bridge: {}µs | Layout: {}µs | Render: {}µs | Nodes: {} | Iter: {}",
+            version, stats.fps, stats.cpu_usage, stats.process_memory_rss_bytes / 1024 / 1024, stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count, stats.scheduler_iteration
         );
         let stats_buffer = self.stats_buffer.get_or_insert_with(|| {
             glyphon::Buffer::new(&mut self.font_system, Metrics::new(12.0, 16.0))

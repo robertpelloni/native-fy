@@ -485,6 +485,10 @@ impl ApplicationHandler for NativefyApp {
                 if let (Some(state), Some(engine), Some(root_id)) = (self.render_state.as_mut(), self.layout_engine.as_ref(), self.root_id) {
                     let render_start_hot = Instant::now();
 
+                    let mut sys = self.sys.lock().unwrap();
+                    sys.refresh_cpu_usage();
+                    sys.refresh_memory();
+
                     let mut stats = AppStats {
                         fps: self.fps,
                         layout_time_micros: layout_duration.as_micros() as u64,
@@ -493,7 +497,10 @@ impl ApplicationHandler for NativefyApp {
                         bridge_time_micros: bridge_duration.as_micros() as u64,
                         render_time_micros: 0,
                         gpu_time_micros: 0,
-                        process_memory_rss_bytes: 0,
+                        process_memory_rss_bytes: sys.process(sysinfo::Pid::from_u32(std::process::id())).map(|p: &sysinfo::Process| p.memory()).unwrap_or(0),
+                        cpu_usage: sys.global_cpu_usage() as f64,
+                        total_memory: sys.total_memory(),
+                        scheduler_iteration: 0, // Will be updated if available
                     };
 
                     // Record history for dashboard
@@ -508,6 +515,7 @@ impl ApplicationHandler for NativefyApp {
 
                     {
                         let mut shared_stats = self.current_stats.lock().unwrap();
+                        stats.scheduler_iteration = shared_stats.scheduler_iteration;
                         *shared_stats = stats;
                     }
 
@@ -579,6 +587,9 @@ impl ApplicationHandler for NativefyApp {
                          render_time_micros: 0,
                          gpu_time_micros: 0,
                          process_memory_rss_bytes: 0,
+                         cpu_usage: 0.0,
+                         total_memory: 0,
+                         scheduler_iteration: 0,
                      };
                      let json = serde_json::to_string_pretty(&stats).unwrap();
                      let _ = std::fs::write("perf_metrics.json", json);

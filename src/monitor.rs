@@ -22,7 +22,9 @@ impl Monitor {
     pub fn spawn(self) {
         std::thread::spawn(move || {
             let mut last_decision = Instant::now();
+            let mut iteration = 0;
             loop {
+                iteration += 1;
                 std::thread::sleep(Duration::from_millis(500));
 
                 let stats = {
@@ -62,6 +64,12 @@ impl Monitor {
                     });
 
                     last_decision = Instant::now();
+                }
+
+                // Update shared stats with monitor-specific info
+                {
+                    let mut shared = self.current_stats.lock().unwrap();
+                    shared.scheduler_iteration = iteration;
                 }
             }
         });
