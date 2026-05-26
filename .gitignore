@@ -3,3 +3,7 @@ node_modules/
 .jules/
 *.log
 app_output.txt
+perf_metrics.json
+ui_ast.json
+staging/
+*_REPORT.md
