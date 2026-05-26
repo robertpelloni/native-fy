@@ -55,9 +55,10 @@ function extractTopology() {
         else if (["ul", "ol"].includes(tagName)) type = "List";
 
         let text = "";
-        if (el.childNodes.length === 1 && el.childNodes[0].nodeType === Node.TEXT_NODE) {
-            const txt = el.childNodes[0].textContent.trim();
-            if (txt) {
+        // Detect text nodes more robustly
+        if (el.children.length === 0) {
+            const txt = el.textContent.trim();
+            if (txt && !["img", "svg", "input", "textarea", "select"].includes(tagName)) {
                 type = "Text";
                 text = txt;
             }

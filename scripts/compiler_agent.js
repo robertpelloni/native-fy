@@ -91,21 +91,29 @@ ${rustCode}
 
             // Compile/check
             try {
-                execSync('cargo check', { stdio: 'pipe' });
+                console.log("Validating generated code with cargo check...");
+                execSync('cargo check --message-format=short', { stdio: 'pipe' });
                 console.log("Compilation Successful!");
                 success = true;
             } catch (error) {
                 const compilerError = error.stderr ? error.stderr.toString() : error.message;
-                console.error("Compilation Failed.");
+                console.error("Compilation Failed. Initiating self-healing loop...");
 
-                // Format remediation prompt
-                currentPrompt = `The previous Rust code you provided for the body of \`generate_ui_tree\` failed to compile. Here is the compiler output:
+                // Enhanced remediation prompt
+                currentPrompt = `The previous Rust code you generated for the body of \`generate_ui_tree\` failed to compile.
 
+CONTEXT:
+Function: \`pub fn generate_ui_tree(engine: &mut LayoutEngine) -> NodeId { ... }\`
+Available: \`engine\`, \`Node\`, \`AstRect\`, \`FlexStyles\`, \`HashMap\`, \`NodeId\`.
+
+COMPILER ERROR:
 \`\`\`
 ${compilerError}
 \`\`\`
 
-Please fix the errors and provide the corrected Rust code (ONLY the body of the function) wrapped in \`\`\`rust block.`;
+Please fix these errors and provide the corrected Rust code (ONLY the lines that go inside the function body).
+Ensure you use \`.to_string()\` for String fields and handle \`Option\` types correctly.
+Wrap your output in a \`\`\`rust block.`;
             }
 
         } catch (error) {
