@@ -54,6 +54,34 @@ impl JsRuntime {
         context.with(|ctx| {
             let globals = ctx.globals();
 
+            // Native console.log polyfill
+            let console = rquickjs::Object::new(ctx.clone()).unwrap();
+            console.set("log", Function::new(ctx.clone(), |args: rquickjs::function::Rest<rquickjs::Value>| {
+                let mut out = String::new();
+                for arg in args.0 {
+                    out.push_str(&format!("{:?}", arg));
+                    out.push(' ');
+                }
+                println!("{}", out.trim());
+            })).unwrap();
+            console.set("warn", Function::new(ctx.clone(), |args: rquickjs::function::Rest<rquickjs::Value>| {
+                let mut out = String::new();
+                for arg in args.0 {
+                    out.push_str(&format!("{:?}", arg));
+                    out.push(' ');
+                }
+                eprintln!("WARN: {}", out.trim());
+            })).unwrap();
+            console.set("error", Function::new(ctx.clone(), |args: rquickjs::function::Rest<rquickjs::Value>| {
+                let mut out = String::new();
+                for arg in args.0 {
+                    out.push_str(&format!("{:?}", arg));
+                    out.push(' ');
+                }
+                eprintln!("ERROR: {}", out.trim());
+            })).unwrap();
+            globals.set("console", console).unwrap();
+
             let tx_create = tx.clone();
             globals.set("_native_create_node", Function::new(ctx.clone(), move |_type: String, _styles: rquickjs::Object, _text: Option<String>| {
                 let mut styles = HashMap::new();
@@ -226,9 +254,25 @@ impl JsRuntime {
 
     pub fn eval(&self, source: &str) {
         self.context.with(|ctx| {
-            let res: Result<(), _> = ctx.eval(source);
+            let res: Result<rquickjs::Value, _> = ctx.eval(source);
             if let Err(e) = res {
-                eprintln!("JS Error: {:?}", e);
+                if let Some(exception) = ctx.catch().as_exception() {
+                    eprintln!("JS Exception: {} at {}",
+                        exception.message().unwrap_or_default(),
+                        exception.stack().unwrap_or_default()
+                    );
+                } else {
+                    eprintln!("JS Error: {:?}", e);
+                }
+            }
+        });
+    }
+
+    pub fn tick(&self) {
+        self.context.with(|ctx| {
+            let globals = ctx.globals();
+            if let Ok(handler) = globals.get::<_, Function>("_native_tick") {
+                let _ = handler.call::<(), ()>(());
             }
         });
     }

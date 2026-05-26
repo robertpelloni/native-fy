@@ -1,4 +1,32 @@
 const _eventListeners = {};
+const _timers = [];
+
+globalThis.setInterval = (cb, ms) => {
+    _timers.push({ cb, ms, last: Date.now() });
+};
+
+globalThis.setTimeout = (cb, ms) => {
+    _timers.push({ cb, ms, last: Date.now(), once: true });
+};
+
+globalThis._native_tick = () => {
+    const now = Date.now();
+    for (let i = _timers.length - 1; i >= 0; i--) {
+        const t = _timers[i];
+        if (now - t.last >= t.ms) {
+            try {
+                t.cb();
+            } catch (e) {
+                console.error("Timer Error:", e);
+            }
+            if (t.once) {
+                _timers.splice(i, 1);
+            } else {
+                t.last = now;
+            }
+        }
+    }
+};
 
 const NativeUI = {
     createNode: (type, styles, text) => {

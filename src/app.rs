@@ -170,6 +170,9 @@ impl ApplicationHandler for NativefyApp {
                 }
             }
             WindowEvent::RedrawRequested => {
+                if let Some(runtime) = self.js_runtime.as_ref() {
+                    runtime.tick();
+                }
                 let _loop_start = Instant::now();
                 // Update FPS
                 self.frame_count += 1;
