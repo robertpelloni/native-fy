@@ -52,6 +52,9 @@ const NativeUI = {
     syncProtocol: () => {
         _native_sync_protocol();
     },
+    nativefy: (url) => {
+        _native_nativefy(url);
+    },
     getMetadata: () => {
         return _native_get_metadata();
     },

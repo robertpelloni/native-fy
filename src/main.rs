@@ -46,6 +46,9 @@ fn main() {
             cpu_usage: 0.0,
             total_memory: 0,
             scheduler_iteration: 0,
+            batch_size: 0,
+            text_cache_size: 0,
+            texture_cache_size: 0,
         };
         let json = serde_json::to_string_pretty(&stats).unwrap();
         let _ = std::fs::write("perf_metrics.json", json);

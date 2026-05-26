@@ -460,6 +460,22 @@ impl ApplicationHandler for NativefyApp {
                                 .arg("scripts/protocol_sync.js")
                                 .status();
                         }
+                        UiCommand::Nativefy { url } => {
+                            println!("Runtime: Triggering Full Pipeline for {}...", url);
+                            let status = std::process::Command::new("npm")
+                                .arg("run")
+                                .arg("pipeline")
+                                .arg("--")
+                                .arg(url)
+                                .status();
+
+                            if let Ok(s) = status {
+                                if s.success() {
+                                    println!("Runtime: Transpilation successful. Signalling restart for autonomous update.");
+                                    event_loop.exit(); // Exit and let wrapper restart
+                                }
+                            }
+                        }
                         UiCommand::ScaleResources { batch_size, text_eviction_threshold, texture_eviction_threshold } => {
                             println!("Runtime: Scaling resources (Batch: {}, Text: {}, Texture: {})", batch_size, text_eviction_threshold, texture_eviction_threshold);
                             self.batch_size = batch_size;
@@ -501,6 +517,9 @@ impl ApplicationHandler for NativefyApp {
                         cpu_usage: sys.global_cpu_usage() as f64,
                         total_memory: sys.total_memory(),
                         scheduler_iteration: 0, // Will be updated if available
+                        batch_size: self.batch_size,
+                        text_cache_size: state.text_buffers.len(),
+                        texture_cache_size: state.textures.len(),
                     };
 
                     // Record history for dashboard
@@ -590,6 +609,9 @@ impl ApplicationHandler for NativefyApp {
                          cpu_usage: 0.0,
                          total_memory: 0,
                          scheduler_iteration: 0,
+                         batch_size: 0,
+                         text_cache_size: 0,
+                         texture_cache_size: 0,
                      };
                      let json = serde_json::to_string_pretty(&stats).unwrap();
                      let _ = std::fs::write("perf_metrics.json", json);

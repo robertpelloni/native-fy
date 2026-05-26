@@ -27,6 +27,7 @@ pub enum UiCommand {
         data: Vec<u8>,
     },
     SyncProtocol,
+    Nativefy { url: String },
     HealthCheck,
     Reload,
     RunPipeline,
@@ -127,6 +128,11 @@ impl JsRuntime {
             let tx_sync = tx.clone();
             globals.set("_native_sync_protocol", Function::new(ctx.clone(), move || {
                 let _ = tx_sync.send(UiCommand::SyncProtocol);
+            })).unwrap();
+
+            let tx_nfy = tx.clone();
+            globals.set("_native_nativefy", Function::new(ctx.clone(), move |url: String| {
+                let _ = tx_nfy.send(UiCommand::Nativefy { url });
             })).unwrap();
 
             let tx_btn = tx.clone();

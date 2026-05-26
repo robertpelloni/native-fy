@@ -17,6 +17,9 @@ pub struct AppStats {
     pub cpu_usage: f64,
     pub total_memory: u64,
     pub scheduler_iteration: u32,
+    pub batch_size: u32,
+    pub text_cache_size: usize,
+    pub texture_cache_size: usize,
 }
 
 pub fn log_error(msg: &str) {
