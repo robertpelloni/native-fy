@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 use std::time::{Instant, Duration};
+use notify::Watcher;
+
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::atomic::{Ordering};
 
@@ -15,6 +17,27 @@ use crate::runtime::{JsRuntime, UiCommand};
 use crate::render::{RenderState, NodeData};
 use crate::stats::{AppStats, log_error};
 use crate::{ui_gen, monitor};
+
+const VERIFICATION_UI_SCRIPT: &str = r#"
+    NativeUI.Components.Button("Trigger Reload", () => {
+        console.log("UI: Reload triggered from button");
+        NativeUI.reload();
+    }, { margin: "10px" });
+
+    NativeUI.Components.Button("Test Fetch", async () => {
+        console.log("UI: Fetch triggered from button");
+        const data = await NativeUI.fetch("https://google.com");
+        console.log("UI: Fetch result received");
+    }, { margin: "10px" });
+
+    NativeUI.Components.Button("Capture Frame", () => {
+        console.log("UI: Screenshot triggered from button");
+        NativeUI.screenshot("manual_capture.png");
+    }, { margin: "10px" });
+
+    NativeUI.Components.Svg('<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>', { width: "100px", height: "100px", margin: "10px" });
+"#;
+
 
 pub struct NativefyApp {
     pub window: Option<Arc<Window>>,
@@ -122,26 +145,52 @@ impl ApplicationHandler for NativefyApp {
             }
             runtime.eval(&bridge_code);
 
+
+
+            // Hot-reloading watcher
+            let watch_tx = self.ui_tx.clone();
+            std::thread::spawn(move || {
+                let (tx, rx) = std::sync::mpsc::channel();
+                let mut watcher = notify::recommended_watcher(tx).unwrap();
+                let mut js_path = std::env::current_dir().unwrap().join("src/runtime.js");
+
+                if !js_path.exists() {
+                     // Fallback for execution from target dir (like in tests)
+                     let alt_path = std::env::current_exe()
+                        .unwrap_or_else(|_| std::env::current_dir().unwrap())
+                        .parent().unwrap()
+                        .parent().unwrap()
+                        .parent().unwrap()
+                        .join("src/runtime.js");
+                     if alt_path.exists() {
+                         js_path = alt_path;
+                     }
+                }
+
+                if js_path.exists() {
+                    watcher.watch(&js_path, notify::RecursiveMode::NonRecursive).unwrap();
+
+                    for res in rx {
+                        match res {
+                            Ok(event) => {
+                                if let notify::EventKind::Modify(_) = event.kind {
+                                    if let Ok(script) = std::fs::read_to_string(&js_path) {
+                                        let _ = watch_tx.send(UiCommand::HotReloadScript { script });
+                                    }
+                                }
+                            },
+                            Err(e) => crate::stats::log_error(&format!("Watch error: {:?}", e)),
+                        }
+                    }
+                } else {
+                    println!("Hot reload watcher failed to find src/runtime.js at {:?}", js_path);
+                }
+            });
+
             // Wire bridge features to UI for verification
-            runtime.eval(r#"
-                NativeUI.Components.Button("Trigger Reload", () => {
-                    console.log("UI: Reload triggered from button");
-                    NativeUI.reload();
-                }, { margin: "10px" });
 
-                NativeUI.Components.Button("Test Fetch", async () => {
-                    console.log("UI: Fetch triggered from button");
-                    const data = await NativeUI.fetch("https://google.com");
-                    console.log("UI: Fetch result received");
-                }, { margin: "10px" });
 
-                NativeUI.Components.Button("Capture Frame", () => {
-                    console.log("UI: Screenshot triggered from button");
-                    NativeUI.screenshot("manual_capture.png");
-                }, { margin: "10px" });
-
-                NativeUI.Components.Svg('<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>', { width: "100px", height: "100px", margin: "10px" });
-            "#);
+            runtime.eval(VERIFICATION_UI_SCRIPT);
 
             self.js_runtime = Some(runtime);
 
@@ -484,7 +533,39 @@ impl ApplicationHandler for NativefyApp {
                                 state.texture_eviction_threshold = texture_eviction_threshold;
                             }
                         }
+
+                        UiCommand::HotReloadScript { script } => {
+                            println!("Runtime: Hot-reloading QuickJS script...");
+                            if let Some(_) = self.js_runtime.as_ref() {
+                                // Destroy old runtime and create a fresh one to avoid memory leaks/duplicated listeners
+                                let runtime = JsRuntime::new(self.ui_tx.clone(), self.fps_val.clone(), self.sys.clone());
+                                let mut bridge_code = script;
+                                if std::env::var("PROD_MODE").is_ok() {
+                                    bridge_code = format!("globalThis.PROD_MODE = true;
+ {}", bridge_code);
+                                }
+                                if std::env::var("VALIDATION_MODE").is_ok() {
+                                    bridge_code = format!("globalThis.VALIDATION_MODE = true;
+ {}", bridge_code);
+                                }
+                                runtime.eval(&bridge_code);
+
+                                // Re-wire verification UI features
+                                runtime.eval(VERIFICATION_UI_SCRIPT);
+
+                                self.js_runtime = Some(runtime);
+
+                                if let Some(engine) = self.layout_engine.as_mut() {
+                                    engine.clear();
+                                    let new_root = ui_gen::generate_ui_tree(engine);
+                                    self.root_id = Some(new_root);
+                                    let _ = engine.compute(new_root);
+                                    recompute = true;
+                                }
+                            }
+                        }
                     }
+
                 }
 
                 let bridge_duration = bridge_start.elapsed();

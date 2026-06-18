@@ -52,3 +52,7 @@
 - Enhanced the Native Monitoring Dashboard with real-time performance history graphs.
 - Integrated the dashboard rendering path with the high-performance text engine.
 - Refined the graph visualization for better visibility in production environments.
+
+## v0.37.0
+- Implemented JS Hot-reloading using the notify crate to listen to file changes and inject the new JS code directly into the QuickJS engine without restarting the Rust process.
+- Wired hot reloading through UiCommand loop to ensure memory safety by completely recreating the JsRuntime object on script refresh to avoid duplicating state and listeners.

@@ -47,4 +47,4 @@
 - [x] **SVG/Vector graphics support**
 - [ ] Python/Zig language bindings
 - [ ] Embedded platform targets (ARM/Linux)
-- [ ] Hot-reloading scripts
+- [x] Hot-reloading scripts

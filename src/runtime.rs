@@ -39,6 +39,7 @@ pub enum UiCommand {
         text_eviction_threshold: usize,
         texture_eviction_threshold: usize,
     },
+    HotReloadScript { script: String },
 }
 
 pub struct JsRuntime {
