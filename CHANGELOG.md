@@ -1,8 +1,11 @@
-
-## [0.37.0] - 2026-05-25
-- Autonomous protocol integration.
-- End-to-end pipeline automation.
 # CHANGELOG
+
+
+## [0.37.0] - 2026-05-26
+- Implemented JS Hot-reloading using the `notify` crate to listen to file changes.
+- Injects updated JS code directly into the QuickJS engine via `UiCommand::HotReloadScript` without restarting the Rust process.
+- Ensured memory safety by destroying and recreating the `JsRuntime` instance on script refresh, avoiding duplicate state and listeners.
+- Finalized autonomous execution documentation protocol.
 
 ## [0.36.0] - 2024-12-05
 - Implemented Target Environment Functional Integration Suite.
@@ -52,7 +55,3 @@
 - Enhanced the Native Monitoring Dashboard with real-time performance history graphs.
 - Integrated the dashboard rendering path with the high-performance text engine.
 - Refined the graph visualization for better visibility in production environments.
-
-## v0.37.0
-- Implemented JS Hot-reloading using the notify crate to listen to file changes and inject the new JS code directly into the QuickJS engine without restarting the Rust process.
-- Wired hot reloading through UiCommand loop to ensure memory safety by completely recreating the JsRuntime object on script refresh to avoid duplicating state and listeners.
