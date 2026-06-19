@@ -1,26 +1,17 @@
-# HANDOFF: Native-fy UI Engine (v0.36.0)
+# Session Handoff
 
-## Session Summary
-This session successfully modularized the core engine architecture and formalized the target environment integration suite into the autonomous resource orchestration logic. The engine is now "system-aware," meaning it can dynamically throttle its resource consumption based on global CPU and memory pressure, significantly increasing deployment readiness for shared or constrained environments.
+## Summary of Session
+- Verified repository setup and successfully built and executed all automated testing layers (Integration, E2E, Benchmarks).
+- Identified missing feature from ROADMAP.md: "Hot-reloading scripts".
+- Implemented JS Hot-reloading in `src/app.rs` using the `notify` crate to watch `src/runtime.js` and inject updates asynchronously.
+- Updated `Cargo.toml` and lockfile.
+- Marked task as complete in `ROADMAP.md` and added summary to `CHANGELOG.md`.
 
-## Architectural Shifts
-- **Modular Architecture:** Extracted core logic into `app`, `render`, and `stats` modules for improved maintainability.
-- **Functional Integration:** Implement a validation suite for staging artifacts.
-- **Memory Governance:**  Integrated the `sysinfo` crate, allowing the Rust core to retrieve real-time host telemetry.
-- **System-Aware Scaling:** The autonomous task scheduler in `src/runtime.js` now combines engine-level FPS metrics with host-level CPU metrics to make scaling decisions.
-- **Scaling Thresholds:**
-  - **Scale UP:** FPS > 55 AND CPU < 70%.
-  - **Scale DOWN:** FPS < 30 OR CPU > 90%.
-- **Bridge Expansion:** Added `NativeUI.getSystemMetrics()` to provide the JS layer with `cpu_usage`, `total_mem`, and `used_mem`.
+## System Memories and Structural Shifts
+- Recreating the `JsRuntime` within `app.rs` on a hot-reload event is the safest method to ensure no memory leaks or duplicate event listeners occur from sequential re-evaluations.
+- Project structure strictly enforces pure Native UI concepts using wgpu and taffy; do not default to standard DOM.
+- Version is currently at `v0.37.0`. Future versions must explicitly be updated in `VERSION.md`.
 
-## State of the Repository
-- **Version:** 0.36.0.
-- **Audit:** A comprehensive Deployment Readiness Audit (`PERFORMANCE_AUDIT.md`) has been conducted and passed.
-- **Reliability:** The engine handles both engine-level load (high node churn) and host-level load (CPU pressure) autonomously.
-
-## Next Steps for Successor Agent
-1. **Network Throttling:** Implement bandwidth-aware asset loading in the `fetch` bridge.
-2. **GPU Memory Introspection:** Expand system metrics to include dedicated GPU memory usage via `wgpu` diagnostics.
-3. **Multi-Process Isolation:** Explore moving the `QuickJS` runtime into a separate process/worker to prevent logic spikes from affecting the rendering frame-rate.
-
-**THE ENGINE IS NOW SYSTEM-AWARE. PROCEED TO DEPLOYMENT.**
+## Next Steps
+- Conduct a review meeting to verify the updated documentation.
+- Plan next roadmap steps: Python/Zig bindings or Embedded Platform Targets.
