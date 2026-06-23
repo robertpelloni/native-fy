@@ -1,3 +1,5 @@
+# 🚧 UNDER CONSTRUCTION — ALPHA STATE! 🚧
+
 # native-fy
 
 Yes, this is an incredible use case for Google Jules. Because Jules is an **asynchronous coding agent** that clones your repo into an isolated cloud VM, plans multi-file changes, runs compilation checks, and pushes clean pull requests, it is *perfectly* suited to handle the grueling, multi-step process of building this transpiler pipeline.
