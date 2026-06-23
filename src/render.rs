@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{Instant};
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
