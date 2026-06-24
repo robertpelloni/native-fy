@@ -234,6 +234,30 @@ impl LayoutEngine {
         self.node_values.get(&id)
     }
 
+    pub fn hit_test(&self, root_id: NodeId, x: f32, y: f32) -> Option<NodeId> {
+        let mut hit = None;
+        let mut stack = vec![(root_id, 0.0, 0.0)];
+
+        while let Some((id, parent_x, parent_y)) = stack.pop() {
+            if let Ok(layout) = self.taffy.layout(id) {
+                let abs_x = parent_x + layout.location.x;
+                let abs_y = parent_y + layout.location.y;
+
+                if x >= abs_x && x <= abs_x + layout.size.width &&
+                   y >= abs_y && y <= abs_y + layout.size.height {
+                    // It's a hit! We continue searching children to find the deepest match
+                    hit = Some(id);
+                    if let Ok(children) = self.taffy.children(id) {
+                        for child in children {
+                            stack.push((child, abs_x, abs_y));
+                        }
+                    }
+                }
+            }
+        }
+        hit
+    }
+
     pub fn node_count(&self) -> usize {
         self.taffy.total_node_count()
     }

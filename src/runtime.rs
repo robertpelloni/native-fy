@@ -284,14 +284,32 @@ impl JsRuntime {
         });
     }
 
-    pub fn dispatch_click(&self, x: f32, y: f32) {
+    pub fn dispatch_click(&self, x: f32, y: f32, target_node_id: Option<u64>) {
         self.context.with(|ctx| {
             let globals = ctx.globals();
             if let Ok(handler) = globals.get::<_, Function>("_native_on_event") {
                 let data = rquickjs::Object::new(ctx.clone()).unwrap();
                 let _ = data.set("x", x);
                 let _ = data.set("y", y);
+                if let Some(id) = target_node_id {
+                    let _ = data.set("targetId", id as f64);
+                }
                 let _ = handler.call::<(String, rquickjs::Object), ()>(("click".to_string(), data));
+            }
+        });
+    }
+
+    pub fn dispatch_cursor(&self, x: f32, y: f32, target_node_id: Option<u64>) {
+        self.context.with(|ctx| {
+            let globals = ctx.globals();
+            if let Ok(handler) = globals.get::<_, Function>("_native_on_event") {
+                let data = rquickjs::Object::new(ctx.clone()).unwrap();
+                let _ = data.set("x", x);
+                let _ = data.set("y", y);
+                if let Some(id) = target_node_id {
+                    let _ = data.set("targetId", id as f64);
+                }
+                let _ = handler.call::<(String, rquickjs::Object), ()>(("mousemove".to_string(), data));
             }
         });
     }

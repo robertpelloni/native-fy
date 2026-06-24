@@ -212,10 +212,21 @@ impl ApplicationHandler for NativefyApp {
             }
             WindowEvent::CursorMoved { position, .. } => {
                 self.mouse_pos = [position.x as f32, position.y as f32];
+                if let (Some(engine), Some(root_id)) = (self.layout_engine.as_ref(), self.root_id) {
+                    let hit_id = engine.hit_test(root_id, self.mouse_pos[0], self.mouse_pos[1]);
+                    if let Some(runtime) = self.js_runtime.as_ref() {
+                        let target_id = hit_id.map(|id| u64::from(id));
+                        runtime.dispatch_cursor(self.mouse_pos[0], self.mouse_pos[1], target_id);
+                    }
+                }
             }
             WindowEvent::MouseInput { state: ElementState::Pressed, button: MouseButton::Left, .. } => {
-                if let Some(runtime) = self.js_runtime.as_ref() {
-                    runtime.dispatch_click(self.mouse_pos[0], self.mouse_pos[1]);
+                if let (Some(engine), Some(root_id)) = (self.layout_engine.as_ref(), self.root_id) {
+                    let hit_id = engine.hit_test(root_id, self.mouse_pos[0], self.mouse_pos[1]);
+                    if let Some(runtime) = self.js_runtime.as_ref() {
+                        let target_id = hit_id.map(|id| u64::from(id));
+                        runtime.dispatch_click(self.mouse_pos[0], self.mouse_pos[1], target_id);
+                    }
                 }
             }
             WindowEvent::RedrawRequested => {

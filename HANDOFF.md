@@ -9,5 +9,10 @@
 - Implemented `PythonRuntime` in `src/python_bridge.rs` utilizing the `pyo3` crate to allow Python execution via a native thread bridge to the Rust UI Command channel.
 - Updated `Cargo.toml` dependencies with `pyo3` and fixed compilation warnings.
 
+## Event Bridging Refinement (Nudge Implementation)
+- Implemented robust `hit_test` logic in `src/layout.rs` by traversing the Taffy node tree based on mouse coordinates.
+- Wired hit testing directly to `WindowEvent::MouseInput` and `WindowEvent::CursorMoved`.
+- Refactored `dispatch_click` and added `dispatch_cursor` in the JS runtime bridge to send accurate node target `targetId` data payload over the JavaScript boundary for more granular click mapping.
+
 ## Version Bump
 - Globally updated `VERSION.md` and `Cargo.toml` to `0.38.0`.
