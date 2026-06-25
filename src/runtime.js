@@ -147,8 +147,15 @@ function runAutonomousMaintenance() {
         NativeUI.screenshot("perf_diag.png");
     }
 
-    // Trigger Protocol Sync every 5 minutes (5 iterations)
-    if (_maintenanceIteration % 5 === 0) {
+    // Trigger full autonomous pipeline on severe degradation or specific intervals
+    if (stats.fps < 5 && _maintenanceIteration > 2) {
+        console.error("Scheduler: Engine stalled. Triggering full Autonomous Pipeline recovery...");
+        NativeUI.runPipeline();
+    } else if (_maintenanceIteration % 15 === 0) {
+        console.log("Scheduler: Triggering deep validation pipeline.");
+        NativeUI.runPipeline();
+    } else if (_maintenanceIteration % 5 === 0) {
+        // Trigger Protocol Sync every 5 minutes (5 iterations)
         console.log("Scheduler: Triggering scheduled protocol synchronization.");
         NativeUI.syncProtocol();
     }
