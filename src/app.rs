@@ -498,6 +498,16 @@ impl ApplicationHandler for NativefyApp {
                             self.dashboard_active = !self.dashboard_active;
                             println!("Runtime: Dashboard is now {}", if self.dashboard_active { "ACTIVE" } else { "INACTIVE" });
                         }
+                        UiCommand::RunAutonomousTask => {
+                            println!("Runtime: Executing background autonomous task (compilation/orchestration)...");
+                            // Execute the AI-driven compiler loop in the background
+                            std::thread::spawn(|| {
+                                let _ = std::process::Command::new("node")
+                                    .arg("scripts/compiler_agent.js")
+                                    .arg("ui_ast.json")
+                                    .status();
+                            });
+                        }
                         UiCommand::RunPipeline => {
                             println!("Watchdog: Executing Recovery Pipeline...");
                             // In a production environment this would trigger an external watchdog process
@@ -643,6 +653,11 @@ impl ApplicationHandler for NativefyApp {
                         text_cache_size: state.text_buffers.len(),
                         texture_cache_size: state.textures.len(),
                     };
+
+                    // Propagate stats back to JS Engine
+                    if let Some(runtime) = self.js_runtime.as_ref() {
+                        runtime.update_stats(&stats);
+                    }
 
                     // Record history for dashboard
                     if self.frame_count % 10 == 0 {

@@ -59,6 +59,9 @@ const NativeUI = {
         return _native_get_metadata();
     },
     getPerformanceStats: () => {
+        if (globalThis._latest_stats) {
+            return globalThis._latest_stats;
+        }
         return _native_get_perf_stats();
     },
     getSystemMetrics: () => {
@@ -72,6 +75,13 @@ const NativeUI = {
     },
     runPipeline: () => {
         _native_run_pipeline();
+    },
+    runAutonomousTask: () => {
+        if (typeof _native_run_autonomous_task !== "undefined") {
+            _native_run_autonomous_task();
+        } else {
+            console.warn("NativeUI: runAutonomousTask binding not available in current runtime.");
+        }
     },
     screenshot: (path) => {
         _native_screenshot(path);
@@ -159,6 +169,13 @@ function runAutonomousMaintenance() {
         console.log("Scheduler: Triggering scheduled protocol synchronization.");
         NativeUI.syncProtocol();
     }
+
+    // Autonomous Task Execution Integration
+    // If the system detects high idle capacity, we can trigger background compilation logic.
+    if (stats.fps > 55 && stats.cpu_usage < 30.0 && _maintenanceIteration % 3 === 0) {
+        console.log("Scheduler: High idle capacity detected. Executing background autonomous tasks...");
+        NativeUI.runAutonomousTask();
+    }
 }
 
 setInterval(runAutonomousMaintenance, SCHEDULER_INTERVAL);
@@ -181,7 +198,52 @@ if (globalThis.PROD_MODE) {
     setInterval(simulateAppChurn, 2000);
 }
 
-// Performance test logic
+// Production Health Checks & Lifecycle Validation
+
+function runE2eLifecycleValidation() {
+    console.log("E2E: Initiating Full Lifecycle Validation Suite...");
+    let passed = true;
+
+    // 1. Bridge Sanity Check
+    try {
+        NativeUI.createNode("Box", { width: "0px", height: "0px" }, "E2E Test");
+        console.log("E2E: Bridge Command execution [OK]");
+    } catch(e) {
+        console.error("E2E: Bridge Command execution [FAILED]", e);
+        passed = false;
+    }
+
+    // 2. Resource Orchestration Readback
+    const metrics = NativeUI.getSystemMetrics();
+    if (metrics && metrics.cpu_usage !== undefined) {
+        console.log(`E2E: Native Metrics Readback [OK] (CPU: ${metrics.cpu_usage}%)`);
+    } else {
+        console.error("E2E: Native Metrics Readback [FAILED]");
+        passed = false;
+    }
+
+    // 3. Telemetry Integration
+    const stats = NativeUI.getPerformanceStats();
+    if (stats && stats.fps !== undefined) {
+        console.log(`E2E: Native Telemetry Pipeline [OK] (FPS: ${stats.fps})`);
+    } else {
+        console.error("E2E: Native Telemetry Pipeline [FAILED]");
+        passed = false;
+    }
+
+    if (!passed) {
+        console.error("E2E: LIFECYCLE VALIDATION FAILED. Escalating to Watchdog...");
+        // Fast-track recovery
+        NativeUI.runPipeline();
+    } else {
+        console.log("E2E: LIFECYCLE VALIDATION PASSED. System is stable.");
+    }
+}
+
+// Run initial E2E validation after 2 seconds to ensure engine boot is complete
+setTimeout(runE2eLifecycleValidation, 2000);
+
+// Keep existing performance smoke tests
 const NODE_COUNTS = [100, 500, 1000];
 
 NODE_COUNTS.forEach(count => {

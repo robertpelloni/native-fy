@@ -31,6 +31,7 @@ pub enum UiCommand {
     HealthCheck,
     Reload,
     RunPipeline,
+    RunAutonomousTask,
     Svg { content: String, styles: HashMap<String, String> },
     Screenshot { path: String },
     ToggleDashboard,
@@ -203,6 +204,11 @@ impl JsRuntime {
                 let _ = tx_pipe.send(UiCommand::RunPipeline);
             })).unwrap();
 
+            let tx_task = tx.clone();
+            globals.set("_native_run_autonomous_task", Function::new(ctx.clone(), move || {
+                let _ = tx_task.send(UiCommand::RunAutonomousTask);
+            })).unwrap();
+
             let tx_ss = tx.clone();
             globals.set("_native_screenshot", Function::new(ctx.clone(), move |path: String| {
                 let _ = tx_ss.send(UiCommand::Screenshot { path });
@@ -311,6 +317,21 @@ impl JsRuntime {
                 }
                 let _ = handler.call::<(String, rquickjs::Object), ()>(("mousemove".to_string(), data));
             }
+        });
+    }
+
+    pub fn update_stats(&self, stats: &crate::stats::AppStats) {
+        self.context.with(|ctx| {
+            let globals = ctx.globals();
+            let data = rquickjs::Object::new(ctx.clone()).unwrap();
+            let _ = data.set("fps", stats.fps);
+            let _ = data.set("cpu_usage", stats.cpu_usage);
+            let _ = data.set("memory_usage_percent", (stats.process_memory_rss_bytes as f64 / stats.total_memory as f64) * 100.0);
+            let _ = data.set("batch_size", stats.batch_size);
+            let _ = data.set("layout_time_micros", stats.layout_time_micros);
+
+            // Push these explicitly to globalThis._latest_stats in QuickJS
+            let _ = globals.set("_latest_stats", data);
         });
     }
 }
