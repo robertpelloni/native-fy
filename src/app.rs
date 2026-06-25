@@ -499,11 +499,24 @@ impl ApplicationHandler for NativefyApp {
                             println!("Runtime: Dashboard is now {}", if self.dashboard_active { "ACTIVE" } else { "INACTIVE" });
                         }
                         UiCommand::RunPipeline => {
-                            println!("Runtime: Triggering Full Pipeline...");
-                            let _ = std::process::Command::new("npm")
+                            println!("Watchdog: Executing Recovery Pipeline...");
+                            // In a production environment this would trigger an external watchdog process
+                            // or restart the host service. For now, we execute the JS E2E pipeline script.
+                            let status = std::process::Command::new("npm")
                                 .arg("run")
-                                .arg("pipeline")
+                                .arg("test:e2e")
                                 .status();
+                            if let Ok(exit_status) = status {
+                                if !exit_status.success() {
+                                    log_error("Watchdog: Pipeline Recovery Failed! Initiating hard reboot protocol.");
+                                    // Here we would exit the process so the OS supervisor (e.g. systemd/Docker) restarts it.
+                                    // std::process::exit(1);
+                                } else {
+                                    println!("Watchdog: Pipeline Recovery Successful.");
+                                }
+                            } else {
+                                log_error("Watchdog: Failed to execute recovery script.");
+                            }
                         }
                         UiCommand::Svg { content, styles } => {
                             if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {

@@ -14,8 +14,9 @@
 - Wired hit testing directly to `WindowEvent::MouseInput` and `WindowEvent::CursorMoved`.
 - Refactored `dispatch_click` and added `dispatch_cursor` in the JS runtime bridge to send accurate node target `targetId` data payload over the JavaScript boundary for more granular click mapping.
 
-## Autonomous Execution Protocol Enhancement
+## Autonomous Execution Protocol Enhancement (Watchdog Recovery)
 - Updated `src/runtime.js` Autonomous Task Scheduler to trigger a full `NativeUI.runPipeline()` recovery sequence if engine performance drops severely (FPS < 5) and persists across iterations, ensuring a robust self-healing loop.
+- Implemented the Rust-side `UiCommand::RunPipeline` handler to spawn the `npm run test:e2e` process. The system monitors the exit code; if the validation fails, it triggers a critical error indicating a required hard reboot.
 
 ## Version Bump
 - Globally updated `VERSION.md` and `Cargo.toml` to `0.38.0`.
