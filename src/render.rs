@@ -817,11 +817,22 @@ impl RenderState {
     }
 
     fn render_svg_to_rgba(&self, svg_content: &str, width: f32, height: f32) -> Option<Vec<u8>> {
+        if width <= 0.0 || height <= 0.0 {
+            return None;
+        }
+
         let opt = usvg::Options::default();
         let rtree = usvg::Tree::from_str(svg_content, &opt).ok()?;
 
+        // Scale to fit requested dimensions
+        let intrinsic_size = rtree.size();
+        let scale_x = width / intrinsic_size.width();
+        let scale_y = height / intrinsic_size.height();
+
+        let transform = tiny_skia::Transform::from_scale(scale_x, scale_y);
+
         let mut pixmap = tiny_skia::Pixmap::new(width as u32, height as u32)?;
-        resvg::render(&rtree, tiny_skia::Transform::default(), &mut pixmap.as_mut());
+        resvg::render(&rtree, transform, &mut pixmap.as_mut());
 
         Some(pixmap.data().to_vec())
     }

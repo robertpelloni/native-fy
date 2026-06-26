@@ -176,6 +176,12 @@ function runAutonomousMaintenance() {
         console.log("Scheduler: High idle capacity detected. Executing background autonomous tasks...");
         NativeUI.runAutonomousTask();
     }
+
+    // Explicit Validation Check for Node execution
+    if (_maintenanceIteration === 1) {
+        console.log("Scheduler: Initiating First-Pass Pipeline Diagnostic Sync...");
+        NativeUI.syncProtocol();
+    }
 }
 
 setInterval(runAutonomousMaintenance, SCHEDULER_INTERVAL);

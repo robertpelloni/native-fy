@@ -713,6 +713,16 @@ impl ApplicationHandler for NativefyApp {
                                 mode: 0,
                                 _padding: [0.0; 3],
                             });
+
+                            // Resource Orchestration / Cache Scale Bar
+                            let scale_h = (entry.batch_size as f32 / 500.0) * 50.0;
+                            dashboard_nodes.push(NodeData {
+                                pos: [x, 600.0 - scale_h],
+                                size: [5.0, scale_h],
+                                color: [0.8, 0.2, 0.8, 1.0],
+                                mode: 0,
+                                _padding: [0.0; 3],
+                            });
                         }
 
                         state.queue.write_buffer(&state.node_buffer, 0, bytemuck::cast_slice(&dashboard_nodes));
