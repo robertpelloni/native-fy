@@ -818,7 +818,10 @@ impl RenderState {
             return None;
         }
 
-        let opt = usvg::Options::default();
+        let mut opt = usvg::Options::default();
+        let mut fontdb = usvg::fontdb::Database::new();
+        fontdb.load_system_fonts();
+        opt.fontdb = std::sync::Arc::new(fontdb);
         let rtree = usvg::Tree::from_str(svg_content, &opt).ok()?;
 
         // Scale to fit requested dimensions
