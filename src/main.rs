@@ -4,6 +4,7 @@ mod runtime;
 mod monitor;
 mod python_bridge;
 mod stats;
+mod audio;
 mod render;
 mod app;
 

@@ -1,6 +1,5 @@
 use std::fs::OpenOptions;
 use std::io::Write;
-use chrono;
 
 pub const LOG_FILE: &str = "app.log";
 

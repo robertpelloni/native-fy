@@ -95,6 +95,12 @@ const NativeUI = {
     createSvg: (content, styles) => {
         return _native_create_svg(content, styles);
     },
+    playAudio: (id, url) => {
+        _native_play_audio(id, url);
+    },
+    stopAudio: (id) => {
+        _native_stop_audio(id);
+    },
     Components: {
         Button: (text, onClick, styles = {}) => {
             // Use native button implementation for better efficiency

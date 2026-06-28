@@ -66,18 +66,14 @@ impl LayoutEngine {
         if val == "auto" {
             return Ok(LengthPercentageAuto::auto());
         }
-        if val.ends_with("px") {
-            let px_str = &val[..val.len() - 2];
-            if let Ok(px) = px_str.parse::<f32>() {
+        if let Some(px_str) = val.strip_suffix("px")
+            && let Ok(px) = px_str.parse::<f32>() {
                 return Ok(LengthPercentageAuto::length(px));
             }
-        }
-        if val.ends_with("%") {
-            let pct_str = &val[..val.len() - 1];
-            if let Ok(pct) = pct_str.parse::<f32>() {
+        if let Some(pct_str) = val.strip_suffix("%")
+            && let Ok(pct) = pct_str.parse::<f32>() {
                 return Ok(LengthPercentageAuto::percent(pct / 100.0));
             }
-        }
         if val == "0" || val == "0px" {
             return Ok(LengthPercentageAuto::length(0.0));
         }
@@ -89,12 +85,12 @@ impl LayoutEngine {
         match parts.len() {
             1 => {
                 let l = Self::parse_length(parts[0])?;
-                Ok(taffy::Rect { left: l.clone(), right: l.clone(), top: l.clone(), bottom: l })
+                Ok(taffy::Rect { left: l, right: l, top: l, bottom: l })
             }
             2 => {
                 let y = Self::parse_length(parts[0])?;
                 let x = Self::parse_length(parts[1])?;
-                Ok(taffy::Rect { left: x.clone(), right: x, top: y.clone(), bottom: y })
+                Ok(taffy::Rect { left: x, right: x, top: y, bottom: y })
             }
             _ => Err(ValidationError::InvalidPropertyValue("padding/margin".to_string(), val.to_string()))
         }
@@ -102,18 +98,14 @@ impl LayoutEngine {
 
     fn parse_length_percentage(val: &str) -> Result<LengthPercentage, ValidationError> {
         let val = val.trim();
-        if val.ends_with("px") {
-            let px_str = &val[..val.len() - 2];
-            if let Ok(px) = px_str.parse::<f32>() {
+        if let Some(px_str) = val.strip_suffix("px")
+            && let Ok(px) = px_str.parse::<f32>() {
                 return Ok(LengthPercentage::length(px));
             }
-        }
-        if val.ends_with("%") {
-            let pct_str = &val[..val.len() - 1];
-            if let Ok(pct) = pct_str.parse::<f32>() {
+        if let Some(pct_str) = val.strip_suffix("%")
+            && let Ok(pct) = pct_str.parse::<f32>() {
                 return Ok(LengthPercentage::percent(pct / 100.0));
             }
-        }
         if val == "0" || val == "0px" {
             return Ok(LengthPercentage::length(0.0));
         }
@@ -125,12 +117,12 @@ impl LayoutEngine {
         match parts.len() {
             1 => {
                 let l = Self::parse_length_percentage(parts[0])?;
-                Ok(taffy::Rect { left: l.clone(), right: l.clone(), top: l.clone(), bottom: l })
+                Ok(taffy::Rect { left: l, right: l, top: l, bottom: l })
             }
             2 => {
                 let y = Self::parse_length_percentage(parts[0])?;
                 let x = Self::parse_length_percentage(parts[1])?;
-                Ok(taffy::Rect { left: x.clone(), right: x, top: y.clone(), bottom: y })
+                Ok(taffy::Rect { left: x, right: x, top: y, bottom: y })
             }
             _ => Err(ValidationError::InvalidPropertyValue("padding/margin".to_string(), val.to_string()))
         }
