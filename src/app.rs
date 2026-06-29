@@ -59,7 +59,6 @@ pub struct NativefyApp {
     pub perf_history: Vec<AppStats>,
     pub dashboard_active: bool,
     pub batch_size: u32,
-    pub audio_engine: Option<crate::audio::AudioEngine>,
 }
 
 impl Default for NativefyApp {
@@ -85,7 +84,6 @@ impl Default for NativefyApp {
             perf_history: Vec::new(),
             dashboard_active: std::env::var("DASHBOARD_MODE").is_ok(),
             batch_size: 100,
-            audio_engine: crate::audio::AudioEngine::new(),
         }
     }
 }
@@ -584,15 +582,11 @@ impl ApplicationHandler for NativefyApp {
                             }
                         }
 
-                        UiCommand::PlayAudio { id, url } => {
-                            if let Some(audio) = self.audio_engine.as_ref() {
-                                audio.play(id, url);
-                            }
+                        UiCommand::PlayAudio { id: _, url: _ } => {
+                            println!("Audio playback not implemented");
                         }
-                        UiCommand::StopAudio { id } => {
-                            if let Some(audio) = self.audio_engine.as_ref() {
-                                audio.stop(&id);
-                            }
+                        UiCommand::StopAudio { id: _ } => {
+                            println!("Audio stop not implemented");
                         }
                         UiCommand::HotReloadScript { script } => {
                             println!("Runtime: Hot-reloading QuickJS script...");
