@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 use std::time::{Instant, Duration};
+use notify::Watcher;
+
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::atomic::{Ordering};
 
@@ -15,6 +17,27 @@ use crate::runtime::{JsRuntime, UiCommand};
 use crate::render::{RenderState, NodeData};
 use crate::stats::{AppStats, log_error};
 use crate::{ui_gen, monitor};
+
+const VERIFICATION_UI_SCRIPT: &str = r#"
+    NativeUI.Components.Button("Trigger Reload", () => {
+        console.log("UI: Reload triggered from button");
+        NativeUI.reload();
+    }, { margin: "10px" });
+
+    NativeUI.Components.Button("Test Fetch", async () => {
+        console.log("UI: Fetch triggered from button");
+        const data = await NativeUI.fetch("https://google.com");
+        console.log("UI: Fetch result received");
+    }, { margin: "10px" });
+
+    NativeUI.Components.Button("Capture Frame", () => {
+        console.log("UI: Screenshot triggered from button");
+        NativeUI.screenshot("manual_capture.png");
+    }, { margin: "10px" });
+
+    NativeUI.Components.Svg('<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>', { width: "100px", height: "100px", margin: "10px" });
+"#;
+
 
 pub struct NativefyApp {
     pub window: Option<Arc<Window>>,
@@ -36,6 +59,7 @@ pub struct NativefyApp {
     pub perf_history: Vec<AppStats>,
     pub dashboard_active: bool,
     pub batch_size: u32,
+    pub audio_engine: Option<crate::audio::AudioEngine>,
 }
 
 impl Default for NativefyApp {
@@ -61,6 +85,7 @@ impl Default for NativefyApp {
             perf_history: Vec::new(),
             dashboard_active: std::env::var("DASHBOARD_MODE").is_ok(),
             batch_size: 100,
+            audio_engine: crate::audio::AudioEngine::new(),
         }
     }
 }
@@ -95,7 +120,7 @@ impl ApplicationHandler for NativefyApp {
             let _ = engine.compute(root_id);
             let _layout_duration = layout_start.elapsed();
             #[cfg(debug_assertions)]
-            if !std::env::var("PROD_MODE").is_ok() {
+            if std::env::var("PROD_MODE").is_err() {
                 println!("Performance: Initial layout computed in {:?}", _layout_duration);
             }
 
@@ -122,30 +147,55 @@ impl ApplicationHandler for NativefyApp {
             }
             runtime.eval(&bridge_code);
 
+
+
+            // Hot-reloading watcher
+            let watch_tx = self.ui_tx.clone();
+            std::thread::spawn(move || {
+                let (tx, rx) = std::sync::mpsc::channel();
+                let mut watcher = notify::recommended_watcher(tx).unwrap();
+                let mut js_path = std::env::current_dir().unwrap().join("src/runtime.js");
+
+                if !js_path.exists() {
+                     // Fallback for execution from target dir (like in tests)
+                     let alt_path = std::env::current_exe()
+                        .unwrap_or_else(|_| std::env::current_dir().unwrap())
+                        .parent().unwrap()
+                        .parent().unwrap()
+                        .parent().unwrap()
+                        .join("src/runtime.js");
+                     if alt_path.exists() {
+                         js_path = alt_path;
+                     }
+                }
+
+                if js_path.exists() {
+                    watcher.watch(&js_path, notify::RecursiveMode::NonRecursive).unwrap();
+
+                    for res in rx {
+                        match res {
+                            Ok(event) => {
+                                if let notify::EventKind::Modify(_) = event.kind
+                                    && let Ok(script) = std::fs::read_to_string(&js_path) {
+                                        let _ = watch_tx.send(UiCommand::HotReloadScript { script });
+                                    }
+                            },
+                            Err(e) => crate::stats::log_error(&format!("Watch error: {:?}", e)),
+                        }
+                    }
+                } else {
+                    println!("Hot reload watcher failed to find src/runtime.js at {:?}", js_path);
+                }
+            });
+
             // Wire bridge features to UI for verification
-            runtime.eval(r#"
-                NativeUI.Components.Button("Trigger Reload", () => {
-                    console.log("UI: Reload triggered from button");
-                    NativeUI.reload();
-                }, { margin: "10px" });
 
-                NativeUI.Components.Button("Test Fetch", async () => {
-                    console.log("UI: Fetch triggered from button");
-                    const data = await NativeUI.fetch("https://google.com");
-                    console.log("UI: Fetch result received");
-                }, { margin: "10px" });
 
-                NativeUI.Components.Button("Capture Frame", () => {
-                    console.log("UI: Screenshot triggered from button");
-                    NativeUI.screenshot("manual_capture.png");
-                }, { margin: "10px" });
-
-                NativeUI.Components.Svg('<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>', { width: "100px", height: "100px", margin: "10px" });
-            "#);
+            runtime.eval(VERIFICATION_UI_SCRIPT);
 
             self.js_runtime = Some(runtime);
 
-            if !std::env::var("PROD_MODE").is_ok() {
+            if std::env::var("PROD_MODE").is_err() {
                 println!("Window, Wgpu, and QuickJS successfully initialized!");
             }
         }
@@ -163,10 +213,37 @@ impl ApplicationHandler for NativefyApp {
             }
             WindowEvent::CursorMoved { position, .. } => {
                 self.mouse_pos = [position.x as f32, position.y as f32];
+                let hit_test_start = Instant::now();
+                if let (Some(engine), Some(root_id)) = (self.layout_engine.as_ref(), self.root_id) {
+                    let hit_id = engine.hit_test(root_id, self.mouse_pos[0], self.mouse_pos[1]);
+                    if let Some(runtime) = self.js_runtime.as_ref() {
+                        let target_id = hit_id.map(u64::from);
+                        let bridge_start = Instant::now();
+                        runtime.dispatch_cursor(self.mouse_pos[0], self.mouse_pos[1], target_id);
+                        if let Ok(mut stats) = self.current_stats.lock() {
+                            stats.bridge_time_micros = stats.bridge_time_micros.max(bridge_start.elapsed().as_micros() as u64);
+                        }
+                    }
+                }
+                if let Ok(mut stats) = self.current_stats.lock() {
+                    stats.hit_test_time_micros = stats.hit_test_time_micros.max(hit_test_start.elapsed().as_micros() as u64);
+                }
             }
             WindowEvent::MouseInput { state: ElementState::Pressed, button: MouseButton::Left, .. } => {
-                if let Some(runtime) = self.js_runtime.as_ref() {
-                    runtime.dispatch_click(self.mouse_pos[0], self.mouse_pos[1]);
+                let hit_test_start = Instant::now();
+                if let (Some(engine), Some(root_id)) = (self.layout_engine.as_ref(), self.root_id) {
+                    let hit_id = engine.hit_test(root_id, self.mouse_pos[0], self.mouse_pos[1]);
+                    if let Some(runtime) = self.js_runtime.as_ref() {
+                        let target_id = hit_id.map(u64::from);
+                        let bridge_start = Instant::now();
+                        runtime.dispatch_click(self.mouse_pos[0], self.mouse_pos[1], target_id);
+                        if let Ok(mut stats) = self.current_stats.lock() {
+                            stats.bridge_time_micros = stats.bridge_time_micros.max(bridge_start.elapsed().as_micros() as u64);
+                        }
+                    }
+                }
+                if let Ok(mut stats) = self.current_stats.lock() {
+                    stats.hit_test_time_micros = stats.hit_test_time_micros.max(hit_test_start.elapsed().as_micros() as u64);
                 }
             }
             WindowEvent::RedrawRequested => {
@@ -283,7 +360,7 @@ impl ApplicationHandler for NativefyApp {
                         }
                         UiCommand::CreateNativeButton { text, styles } => {
                             #[cfg(debug_assertions)]
-                            if !std::env::var("PROD_MODE").is_ok() {
+                            if std::env::var("PROD_MODE").is_err() {
                                 println!("Runtime: Creating native button '{}'", text);
                             }
                             if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
@@ -309,7 +386,7 @@ impl ApplicationHandler for NativefyApp {
                             }
                         }
                         UiCommand::UpdateImage { url, data } => {
-                            if !std::env::var("PROD_MODE").is_ok() {
+                            if std::env::var("PROD_MODE").is_err() {
                                 println!("Runtime: Loading image asset from {}", url);
                             }
                             if let (Some(state), Ok(img)) = (self.render_state.as_mut(), image::load_from_memory(&data)) {
@@ -391,7 +468,7 @@ impl ApplicationHandler for NativefyApp {
                                         state.textures.remove(&entries[i].0);
                                     }
                                     #[cfg(debug_assertions)]
-                                    if !std::env::var("PROD_MODE").is_ok() {
+                                    if std::env::var("PROD_MODE").is_err() {
                                         println!("Memory: Evicted {} textures (LRU).", evict_count);
                                     }
                                 }
@@ -402,7 +479,7 @@ impl ApplicationHandler for NativefyApp {
                             println!("Health Check: Bridge is responsive.");
                         }
                         UiCommand::Reload => {
-                            if !std::env::var("PROD_MODE").is_ok() {
+                            if std::env::var("PROD_MODE").is_err() {
                                 println!("Runtime: Reloading UI tree...");
                             }
                             if let Some(engine) = self.layout_engine.as_mut() {
@@ -422,12 +499,35 @@ impl ApplicationHandler for NativefyApp {
                             self.dashboard_active = !self.dashboard_active;
                             println!("Runtime: Dashboard is now {}", if self.dashboard_active { "ACTIVE" } else { "INACTIVE" });
                         }
+                        UiCommand::RunAutonomousTask => {
+                            println!("Runtime: Executing background autonomous task (compilation/orchestration)...");
+                            // Execute the AI-driven compiler loop in the background
+                            std::thread::spawn(|| {
+                                let _ = std::process::Command::new("node")
+                                    .arg("scripts/compiler_agent.js")
+                                    .arg("ui_ast.json")
+                                    .status();
+                            });
+                        }
                         UiCommand::RunPipeline => {
-                            println!("Runtime: Triggering Full Pipeline...");
-                            let _ = std::process::Command::new("npm")
+                            println!("Watchdog: Executing Recovery Pipeline...");
+                            // In a production environment this would trigger an external watchdog process
+                            // or restart the host service. For now, we execute the JS E2E pipeline script.
+                            let status = std::process::Command::new("npm")
                                 .arg("run")
-                                .arg("pipeline")
+                                .arg("test:e2e")
                                 .status();
+                            if let Ok(exit_status) = status {
+                                if !exit_status.success() {
+                                    log_error("Watchdog: Pipeline Recovery Failed! Initiating hard reboot protocol.");
+                                    // Here we would exit the process so the OS supervisor (e.g. systemd/Docker) restarts it.
+                                    // std::process::exit(1);
+                                } else {
+                                    println!("Watchdog: Pipeline Recovery Successful.");
+                                }
+                            } else {
+                                log_error("Watchdog: Failed to execute recovery script.");
+                            }
                         }
                         UiCommand::Svg { content, styles } => {
                             if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
@@ -469,12 +569,11 @@ impl ApplicationHandler for NativefyApp {
                                 .arg(url)
                                 .status();
 
-                            if let Ok(s) = status {
-                                if s.success() {
+                            if let Ok(s) = status
+                                && s.success() {
                                     println!("Runtime: Transpilation successful. Signalling restart for autonomous update.");
                                     event_loop.exit(); // Exit and let wrapper restart
                                 }
-                            }
                         }
                         UiCommand::ScaleResources { batch_size, text_eviction_threshold, texture_eviction_threshold } => {
                             println!("Runtime: Scaling resources (Batch: {}, Text: {}, Texture: {})", batch_size, text_eviction_threshold, texture_eviction_threshold);
@@ -484,19 +583,60 @@ impl ApplicationHandler for NativefyApp {
                                 state.texture_eviction_threshold = texture_eviction_threshold;
                             }
                         }
+
+                        UiCommand::PlayAudio { id, url } => {
+                            if let Some(audio) = self.audio_engine.as_ref() {
+                                audio.play(id, url);
+                            }
+                        }
+                        UiCommand::StopAudio { id } => {
+                            if let Some(audio) = self.audio_engine.as_ref() {
+                                audio.stop(&id);
+                            }
+                        }
+                        UiCommand::HotReloadScript { script } => {
+                            println!("Runtime: Hot-reloading QuickJS script...");
+                            if self.js_runtime.as_ref().is_some() {
+                                // Destroy old runtime and create a fresh one to avoid memory leaks/duplicated listeners
+                                let runtime = JsRuntime::new(self.ui_tx.clone(), self.fps_val.clone(), self.sys.clone());
+                                let mut bridge_code = script;
+                                if std::env::var("PROD_MODE").is_ok() {
+                                    bridge_code = format!("globalThis.PROD_MODE = true;
+ {}", bridge_code);
+                                }
+                                if std::env::var("VALIDATION_MODE").is_ok() {
+                                    bridge_code = format!("globalThis.VALIDATION_MODE = true;
+ {}", bridge_code);
+                                }
+                                runtime.eval(&bridge_code);
+
+                                // Re-wire verification UI features
+                                runtime.eval(VERIFICATION_UI_SCRIPT);
+
+                                self.js_runtime = Some(runtime);
+
+                                if let Some(engine) = self.layout_engine.as_mut() {
+                                    engine.clear();
+                                    let new_root = ui_gen::generate_ui_tree(engine);
+                                    self.root_id = Some(new_root);
+                                    let _ = engine.compute(new_root);
+                                    recompute = true;
+                                }
+                            }
+                        }
                     }
+
                 }
 
                 let bridge_duration = bridge_start.elapsed();
 
                 let mut layout_duration = Duration::from_micros(0);
-                if recompute {
-                    if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
+                if recompute
+                    && let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
                         let start = Instant::now();
                         let _ = engine.compute(root_id);
                         layout_duration = start.elapsed();
                     }
-                }
 
                 if let (Some(state), Some(engine), Some(root_id)) = (self.render_state.as_mut(), self.layout_engine.as_ref(), self.root_id) {
                     let render_start_hot = Instant::now();
@@ -513,6 +653,7 @@ impl ApplicationHandler for NativefyApp {
                         bridge_time_micros: bridge_duration.as_micros() as u64,
                         render_time_micros: 0,
                         gpu_time_micros: 0,
+                        hit_test_time_micros: 0,
                         process_memory_rss_bytes: sys.process(sysinfo::Pid::from_u32(std::process::id())).map(|p: &sysinfo::Process| p.memory()).unwrap_or(0),
                         cpu_usage: sys.global_cpu_usage() as f64,
                         total_memory: sys.total_memory(),
@@ -522,8 +663,13 @@ impl ApplicationHandler for NativefyApp {
                         texture_cache_size: state.textures.len(),
                     };
 
+                    // Propagate stats back to JS Engine
+                    if let Some(runtime) = self.js_runtime.as_ref() {
+                        runtime.update_stats(&stats);
+                    }
+
                     // Record history for dashboard
-                    if self.frame_count % 10 == 0 {
+                    if self.frame_count.is_multiple_of(10) {
                         self.perf_history.push(stats);
                         if self.perf_history.len() > 100 { self.perf_history.remove(0); }
                     }
@@ -576,6 +722,16 @@ impl ApplicationHandler for NativefyApp {
                                 mode: 0,
                                 _padding: [0.0; 3],
                             });
+
+                            // Resource Orchestration / Cache Scale Bar
+                            let scale_h = (entry.batch_size as f32 / 500.0) * 50.0;
+                            dashboard_nodes.push(NodeData {
+                                pos: [x, 600.0 - scale_h],
+                                size: [5.0, scale_h],
+                                color: [0.8, 0.2, 0.8, 1.0],
+                                mode: 0,
+                                _padding: [0.0; 3],
+                            });
                         }
 
                         state.queue.write_buffer(&state.node_buffer, 0, bytemuck::cast_slice(&dashboard_nodes));
@@ -605,6 +761,7 @@ impl ApplicationHandler for NativefyApp {
                          bridge_time_micros: 0,
                          render_time_micros: 0,
                          gpu_time_micros: 0,
+                         hit_test_time_micros: 0,
                          process_memory_rss_bytes: 0,
                          cpu_usage: 0.0,
                          total_memory: 0,

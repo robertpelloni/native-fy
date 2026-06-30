@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{Instant};
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
@@ -128,9 +128,7 @@ impl RenderState {
 
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps.formats.iter()
-            .copied()
-            .filter(|f| f.is_srgb())
-            .next()
+            .copied().find(|f| f.is_srgb())
             .unwrap_or(surface_caps.formats[0]);
 
         let mut usage = wgpu::TextureUsages::RENDER_ATTACHMENT;
@@ -549,7 +547,7 @@ impl RenderState {
                 self.text_buffers.remove(&entries[i].0);
             }
             #[cfg(debug_assertions)]
-            if !std::env::var("PROD_MODE").is_ok() {
+            if std::env::var("PROD_MODE").is_err() {
                 println!("Memory: Evicted {} text buffers (LRU).", evict_count);
             }
         }
@@ -752,7 +750,7 @@ impl RenderState {
         let _render_duration = render_start.elapsed();
         // Skip per-frame console logging in production/performance runs
         #[cfg(debug_assertions)]
-        if !std::env::var("PROD_MODE").is_ok() {
+        if std::env::var("PROD_MODE").is_err() {
              println!("Performance: Frame rendered in {:?}", _render_duration);
         }
 
@@ -781,8 +779,8 @@ impl RenderState {
 
             if is_image {
                 texture_url = engine.get_value(id).cloned();
-            } else if is_svg {
-                if let Some(svg_content) = engine.get_value(id) {
+            } else if is_svg
+                && let Some(svg_content) = engine.get_value(id) {
                     let cache_key = format!("svg:{:?}", id);
                     if !self.textures.contains_key(&cache_key) {
                         // Render SVG to texture
@@ -792,7 +790,6 @@ impl RenderState {
                     }
                     texture_url = Some(cache_key);
                 }
-            }
 
             nodes.push(NodeData {
                 pos: [x, y],
@@ -817,11 +814,25 @@ impl RenderState {
     }
 
     fn render_svg_to_rgba(&self, svg_content: &str, width: f32, height: f32) -> Option<Vec<u8>> {
-        let opt = usvg::Options::default();
+        if width <= 0.0 || height <= 0.0 {
+            return None;
+        }
+
+        let mut opt = usvg::Options::default();
+        let mut fontdb = usvg::fontdb::Database::new();
+        fontdb.load_system_fonts();
+        opt.fontdb = std::sync::Arc::new(fontdb);
         let rtree = usvg::Tree::from_str(svg_content, &opt).ok()?;
 
+        // Scale to fit requested dimensions
+        let intrinsic_size = rtree.size();
+        let scale_x = width / intrinsic_size.width();
+        let scale_y = height / intrinsic_size.height();
+
+        let transform = tiny_skia::Transform::from_scale(scale_x, scale_y);
+
         let mut pixmap = tiny_skia::Pixmap::new(width as u32, height as u32)?;
-        resvg::render(&rtree, tiny_skia::Transform::default(), &mut pixmap.as_mut());
+        resvg::render(&rtree, transform, &mut pixmap.as_mut());
 
         Some(pixmap.data().to_vec())
     }
