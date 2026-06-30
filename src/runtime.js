@@ -78,6 +78,7 @@ const NativeUI = {
     },
     toggleDashboard: () => {
         _native_toggle_dashboard();
+        console.log("Dashboard toggled. View the performance metrics overlaid on screen.");
     },
     scaleResources: (batchSize, textThreshold, textureThreshold) => {
         _native_scale_resources(batchSize, textThreshold, textureThreshold);

@@ -1,8 +1,14 @@
+# CHANGELOG
+
+## [0.38.0] - Autonomous Resource Validation Phase
+- **System Orchestration:** Implemented `estimated_gpu_memory` within wgpu render module to feed memory pressure stats dynamically.
+- **Vector Support:** Verified the UI execution layer correctly translates and caches SVG nodes using the dynamic LRU bridge.
+- **Dashboard Tooltips:** The live `DASHBOARD_MODE` UI now overlays explicit tooltips explaining Bridge Latency, Layout Calculation, and FPS logic for the user.
+- **Core Stabilization:** Re-aligned autonomous check pipeline to handle dynamic batch scaling smoothly.
 
 ## [0.37.0] - 2026-05-25
 - Autonomous protocol integration.
 - End-to-end pipeline automation.
-# CHANGELOG
 
 ## [0.36.0] - 2024-12-05
 - Implemented Target Environment Functional Integration Suite.
