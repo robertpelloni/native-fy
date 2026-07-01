@@ -40,7 +40,7 @@ impl Monitor {
                     (sys.global_cpu_usage(), sys.total_memory(), sys.used_memory())
                 };
 
-                if last_decision.elapsed() > Duration::from_secs(2) {
+                if last_decision.elapsed() > Duration::from_secs(2) || std::env::var("VALIDATION_MODE").is_ok() {
                     let mut batch_size = 100;
                     let mut text_threshold = 200;
                     let mut texture_threshold = 50;
@@ -50,6 +50,14 @@ impl Monitor {
                         batch_size = 250;
                         text_threshold = 500;
                         texture_threshold = 100;
+                        let _ = self.tx.send(UiCommand::ScaleResources {
+                            batch_size,
+                            text_eviction_threshold: text_threshold,
+                            texture_eviction_threshold: texture_threshold,
+                        });
+                        println!("Runtime: Scaling resources: batch={}, text={}, texture={}", batch_size, text_threshold, texture_threshold);
+                        use std::io::Write;
+                        let _ = std::io::stdout().flush();
                     } else if fps > 55 && cpu_usage < 70.0 && stats.layout_time_micros < 1000 {
                         // High performance headroom: Aggressive scaling
                         batch_size = 500;
