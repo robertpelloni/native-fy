@@ -63,6 +63,7 @@ impl Monitor {
                         texture_eviction_threshold: texture_threshold,
                     });
                     println!("Runtime: Scaling resources: batch={}, text={}, texture={}", batch_size, text_threshold, texture_threshold);
+                    println!("Runtime: Scaling resources: batch={}, text={}, texture={}", batch_size, text_threshold, texture_threshold);
 
                     last_decision = Instant::now();
                 }

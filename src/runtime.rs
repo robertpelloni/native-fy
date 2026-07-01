@@ -93,11 +93,10 @@ impl JsRuntime {
 
                 // Extract styles from JS object
                 for key_res in _styles.keys::<String>() {
-                    if let Ok(key) = key_res {
-                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                    if let Ok(key) = key_res
+                        && let Ok(val) = _styles.get::<String, String>(key.clone()) {
                             styles.insert(key, val);
                         }
-                    }
                 }
 
                 let _ = tx_create.send(UiCommand::CreateNode {
@@ -117,14 +116,13 @@ impl JsRuntime {
                 let tx = tx_fetch.clone();
                 let url_clone = url.clone();
                 std::thread::spawn(move || {
-                    if let Ok(resp) = reqwest::blocking::get(&url_clone) {
-                        if let Ok(bytes) = resp.bytes() {
+                    if let Ok(resp) = reqwest::blocking::get(&url_clone)
+                        && let Ok(bytes) = resp.bytes() {
                             let _ = tx.send(UiCommand::UpdateImage {
                                 url: url_clone,
                                 data: bytes.to_vec(),
                             });
                         }
-                    }
                 });
                 "Asset loading started...".to_string()
             })).unwrap();
@@ -143,11 +141,10 @@ impl JsRuntime {
             globals.set("_native_create_button", Function::new(ctx.clone(), move |text: String, _styles: rquickjs::Object| {
                 let mut styles = HashMap::new();
                 for key_res in _styles.keys::<String>() {
-                    if let Ok(key) = key_res {
-                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                    if let Ok(key) = key_res
+                        && let Ok(val) = _styles.get::<String, String>(key.clone()) {
                             styles.insert(key, val);
                         }
-                    }
                 }
                 let _ = tx_btn.send(UiCommand::CreateNativeButton { text, styles });
             })).unwrap();
@@ -156,11 +153,10 @@ impl JsRuntime {
             globals.set("_native_create_input", Function::new(ctx.clone(), move |placeholder: String, _styles: rquickjs::Object| {
                 let mut styles = HashMap::new();
                 for key_res in _styles.keys::<String>() {
-                    if let Ok(key) = key_res {
-                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                    if let Ok(key) = key_res
+                        && let Ok(val) = _styles.get::<String, String>(key.clone()) {
                             styles.insert(key, val);
                         }
-                    }
                 }
                 let _ = tx_input.send(UiCommand::CreateNativeInput { placeholder, styles });
             })).unwrap();
@@ -169,11 +165,10 @@ impl JsRuntime {
             globals.set("_native_create_list", Function::new(ctx.clone(), move |item_count: u32, _styles: rquickjs::Object| {
                 let mut styles = HashMap::new();
                 for key_res in _styles.keys::<String>() {
-                    if let Ok(key) = key_res {
-                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                    if let Ok(key) = key_res
+                        && let Ok(val) = _styles.get::<String, String>(key.clone()) {
                             styles.insert(key, val);
                         }
-                    }
                 }
                 let _ = tx_list.send(UiCommand::CreateNativeList { item_count, styles });
             })).unwrap();
@@ -192,11 +187,10 @@ impl JsRuntime {
             globals.set("_native_create_svg", Function::new(ctx.clone(), move |content: String, _styles: rquickjs::Object| {
                 let mut styles = HashMap::new();
                 for key_res in _styles.keys::<String>() {
-                    if let Ok(key) = key_res {
-                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                    if let Ok(key) = key_res
+                        && let Ok(val) = _styles.get::<String, String>(key.clone()) {
                             styles.insert(key, val);
                         }
-                    }
                 }
                 let _ = tx_svg.send(UiCommand::Svg { content, styles });
             })).unwrap();

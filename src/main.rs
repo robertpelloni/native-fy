@@ -5,6 +5,7 @@ mod monitor;
 mod stats;
 mod render;
 mod app;
+mod python_bridge;
 
 use std::time::{Instant};
 use stats::{log_error, AppStats};
@@ -68,6 +69,9 @@ fn main() {
     };
 
     let mut app = NativefyApp::default();
+
+    println!("Starting Python IPC Bridge...");
+    python_bridge::start_python_bridge(app.ui_tx.clone());
 
     println!("Starting event loop...");
     let _ = event_loop.run_app(&mut app);

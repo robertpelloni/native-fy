@@ -45,7 +45,7 @@
 - [x] Native Execution Loop Monitoring & Instrumentation
 - [x] Target Environment Functional Integration
 - [x] SVG/Vector graphics support
-- [ ] Python/Zig language bindings
+- [x] Python/Zig language bindings
 - [ ] Embedded platform targets (ARM/Linux)
 - [ ] Hot-reloading scripts
-- [ ] Multi-Process Isolation for QuickJS worker thread
+- [x] Multi-Process Isolation for QuickJS worker thread

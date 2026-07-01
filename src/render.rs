@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{Instant};
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
@@ -129,9 +129,7 @@ impl RenderState {
 
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps.formats.iter()
-            .copied()
-            .filter(|f| f.is_srgb())
-            .next()
+            .copied().find(|f| f.is_srgb())
             .unwrap_or(surface_caps.formats[0]);
 
         let mut usage = wgpu::TextureUsages::RENDER_ATTACHMENT;
@@ -579,7 +577,7 @@ impl RenderState {
                 self.text_buffers.remove(&entries[i].0);
             }
             #[cfg(debug_assertions)]
-            if !std::env::var("PROD_MODE").is_ok() {
+            if std::env::var("PROD_MODE").is_err() {
                 println!("Memory: Evicted {} text buffers (LRU).", evict_count);
             }
         }
@@ -791,7 +789,7 @@ impl RenderState {
         let _render_duration = render_start.elapsed();
         // Skip per-frame console logging in production/performance runs
         #[cfg(debug_assertions)]
-        if !std::env::var("PROD_MODE").is_ok() {
+        if std::env::var("PROD_MODE").is_err() {
              println!("Performance: Frame rendered in {:?}", _render_duration);
         }
 
@@ -820,8 +818,8 @@ impl RenderState {
 
             if is_image {
                 texture_url = engine.get_value(id).cloned();
-            } else if is_svg {
-                if let Some(svg_content) = engine.get_value(id) {
+            } else if is_svg
+                && let Some(svg_content) = engine.get_value(id) {
                     let cache_key = format!("svg:{:?}", id);
                     if !self.textures.contains_key(&cache_key) {
                         // Render SVG to texture
@@ -831,7 +829,6 @@ impl RenderState {
                     }
                     texture_url = Some(cache_key);
                 }
-            }
 
             nodes.push(NodeData {
                 pos: [x, y],

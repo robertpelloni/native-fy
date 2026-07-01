@@ -95,7 +95,7 @@ impl ApplicationHandler for NativefyApp {
             let _ = engine.compute(root_id);
             let _layout_duration = layout_start.elapsed();
             #[cfg(debug_assertions)]
-            if !std::env::var("PROD_MODE").is_ok() {
+            if std::env::var("PROD_MODE").is_err() {
                 println!("Performance: Initial layout computed in {:?}", _layout_duration);
             }
 
@@ -145,7 +145,7 @@ impl ApplicationHandler for NativefyApp {
 
             self.js_runtime = Some(runtime);
 
-            if !std::env::var("PROD_MODE").is_ok() {
+            if std::env::var("PROD_MODE").is_err() {
                 println!("Window, Wgpu, and QuickJS successfully initialized!");
             }
         }
@@ -283,7 +283,7 @@ impl ApplicationHandler for NativefyApp {
                         }
                         UiCommand::CreateNativeButton { text, styles } => {
                             #[cfg(debug_assertions)]
-                            if !std::env::var("PROD_MODE").is_ok() {
+                            if std::env::var("PROD_MODE").is_err() {
                                 println!("Runtime: Creating native button '{}'", text);
                             }
                             if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
@@ -309,7 +309,7 @@ impl ApplicationHandler for NativefyApp {
                             }
                         }
                         UiCommand::UpdateImage { url, data } => {
-                            if !std::env::var("PROD_MODE").is_ok() {
+                            if std::env::var("PROD_MODE").is_err() {
                                 println!("Runtime: Loading image asset from {}", url);
                             }
                             if let (Some(state), Ok(img)) = (self.render_state.as_mut(), image::load_from_memory(&data)) {
@@ -391,7 +391,7 @@ impl ApplicationHandler for NativefyApp {
                                         state.textures.remove(&entries[i].0);
                                     }
                                     #[cfg(debug_assertions)]
-                                    if !std::env::var("PROD_MODE").is_ok() {
+                                    if std::env::var("PROD_MODE").is_err() {
                                         println!("Memory: Evicted {} textures (LRU).", evict_count);
                                     }
                                 }
@@ -402,7 +402,7 @@ impl ApplicationHandler for NativefyApp {
                             println!("Health Check: Bridge is responsive.");
                         }
                         UiCommand::Reload => {
-                            if !std::env::var("PROD_MODE").is_ok() {
+                            if std::env::var("PROD_MODE").is_err() {
                                 println!("Runtime: Reloading UI tree...");
                             }
                             if let Some(engine) = self.layout_engine.as_mut() {
@@ -469,12 +469,11 @@ impl ApplicationHandler for NativefyApp {
                                 .arg(url)
                                 .status();
 
-                            if let Ok(s) = status {
-                                if s.success() {
+                            if let Ok(s) = status
+                                && s.success() {
                                     println!("Runtime: Transpilation successful. Signalling restart for autonomous update.");
                                     event_loop.exit(); // Exit and let wrapper restart
                                 }
-                            }
                         }
                         UiCommand::ScaleResources { batch_size, text_eviction_threshold, texture_eviction_threshold } => {
                             println!("Runtime: Scaling resources (Batch: {}, Text: {}, Texture: {})", batch_size, text_eviction_threshold, texture_eviction_threshold);
@@ -490,13 +489,12 @@ impl ApplicationHandler for NativefyApp {
                 let bridge_duration = bridge_start.elapsed();
 
                 let mut layout_duration = Duration::from_micros(0);
-                if recompute {
-                    if let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
+                if recompute
+                    && let (Some(engine), Some(root_id)) = (self.layout_engine.as_mut(), self.root_id) {
                         let start = Instant::now();
                         let _ = engine.compute(root_id);
                         layout_duration = start.elapsed();
                     }
-                }
 
                 if let (Some(state), Some(engine), Some(root_id)) = (self.render_state.as_mut(), self.layout_engine.as_ref(), self.root_id) {
                     let render_start_hot = Instant::now();
@@ -524,7 +522,7 @@ impl ApplicationHandler for NativefyApp {
                     };
 
                     // Record history for dashboard
-                    if self.frame_count % 10 == 0 {
+                    if self.frame_count.is_multiple_of(10) {
                         self.perf_history.push(stats);
                         if self.perf_history.len() > 100 { self.perf_history.remove(0); }
                     }
