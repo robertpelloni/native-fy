@@ -4,7 +4,9 @@ use taffy::TaffyError;
 
 #[derive(Debug, Clone)]
 pub struct AstRect {
+    #[allow(dead_code)]
     pub x: f32,
+    #[allow(dead_code)]
     pub y: f32,
     pub width: f32,
     pub height: f32,
@@ -32,8 +34,11 @@ pub struct Node {
 
 #[derive(Debug)]
 pub enum ValidationError {
+    #[allow(dead_code)]
     UnsupportedProperty(String, String),
+    #[allow(dead_code)]
     InvalidPropertyValue(String, String),
+    #[allow(dead_code)]
     UnsupportedNodeType(String),
 }
 
