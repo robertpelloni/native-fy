@@ -856,8 +856,18 @@ impl RenderState {
         let opt = usvg::Options::default();
         let rtree = usvg::Tree::from_str(svg_content, &opt).ok()?;
 
+        // Scale the SVG proportionally to the requested layout dimensions
+        let svg_size = rtree.size();
+        let scale_x = width / svg_size.width();
+        let scale_y = height / svg_size.height();
+
+        // Preserve aspect ratio mapping inside the UI bounds
+        let scale = scale_x.min(scale_y);
+        let transform = tiny_skia::Transform::from_scale(scale, scale);
+
         let mut pixmap = tiny_skia::Pixmap::new(width as u32, height as u32)?;
-        resvg::render(&rtree, tiny_skia::Transform::default(), &mut pixmap.as_mut());
+        // Render into the pixmap applying proportional transformation
+        resvg::render(&rtree, transform, &mut pixmap.as_mut());
 
         Some(pixmap.data().to_vec())
     }
