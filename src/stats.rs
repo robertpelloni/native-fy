@@ -13,6 +13,7 @@ pub struct AppStats {
     pub bridge_time_micros: u64,
     pub render_time_micros: u64,
     pub gpu_time_micros: u64,
+    pub gpu_memory_bytes: u64,
     pub process_memory_rss_bytes: u64,
     pub cpu_usage: f64,
     pub total_memory: u64,

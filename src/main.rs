@@ -42,6 +42,7 @@ fn main() {
             bridge_time_micros: 0,
             render_time_micros: 0,
             gpu_time_micros: 0,
+            gpu_memory_bytes: 0,
             process_memory_rss_bytes: 0,
             cpu_usage: 0.0,
             total_memory: 0,

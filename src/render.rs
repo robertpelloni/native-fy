@@ -63,6 +63,7 @@ pub struct NodeData {
 }
 
 pub struct RenderState {
+    pub instance: std::sync::Arc<wgpu::Instance>,
     pub surface: wgpu::Surface<'static>,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
@@ -329,6 +330,7 @@ impl RenderState {
         let text_renderer = TextRenderer::new(&mut text_atlas, &device, wgpu::MultisampleState::default(), None);
 
         Ok(Self {
+            instance: std::sync::Arc::new(instance),
             surface,
             device,
             queue,
@@ -442,13 +444,28 @@ impl RenderState {
     }
 
     pub fn estimated_gpu_memory(&self) -> usize {
-        // Estimate memory: Node buffer + Texture cache
+        // We use the wgpu instance to generate a report, allowing us to peek into
+        // underlying resource counts allocated per backend.
+        let report = self.instance.generate_report();
+
+        let mut allocated_bytes = 0;
+
+        // `generate_report()` returns Option<GlobalReport> on wgpu 0.23.
+        if let Some(r) = report {
+            let hub = r.hub;
+            // Map raw allocation counts to byte sizes using structural knowledge
+            allocated_bytes += hub.buffers.num_allocated * hub.buffers.element_size;
+            allocated_bytes += hub.textures.num_allocated * hub.textures.element_size;
+            allocated_bytes += hub.texture_views.num_allocated * hub.texture_views.element_size;
+            allocated_bytes += hub.bind_groups.num_allocated * hub.bind_groups.element_size;
+        }
+
+        // The structural size gives us a baseline, but texture and buffer backing bytes are larger
         let node_buffer_bytes = std::mem::size_of::<NodeData>() * self.node_buffer_capacity;
-        // Heuristic: each cached texture is roughly 512x512x4 bytes on average for estimation,
-        // or we could track exact size. Using 1MB per texture as heuristic
-        let texture_bytes = self.textures.len() * 1024 * 1024;
-        let atlas_bytes = 4 * 1024 * 1024; // text atlas rough estimate
-        node_buffer_bytes + texture_bytes + atlas_bytes
+        let texture_backing_bytes = self.textures.len() * 512 * 512 * 4; // Average 1MB backing per texture
+        let atlas_bytes = 4 * 1024 * 1024; // Glyphon atlas
+
+        allocated_bytes + node_buffer_bytes + texture_backing_bytes + atlas_bytes
     }
 
     pub fn render_dashboard(&mut self, stats: &AppStats, node_count: u32, screenshot_path: Option<String>) -> Result<(), wgpu::SurfaceError> {
@@ -463,7 +480,7 @@ impl RenderState {
              [Tooltips]\n\
              - FPS (Green bar): Target 60. Layout (Orange bar): Taffy flexbox calculation time. Bridge (Blue bar): JS execution to Rust engine overhead.\n\
              - GPU Mem: Estimated size of NodeBuffers and Texture capacity. Cache: Text/Texture LRU tracking limits. Iter: Watchdog maintenance loops.",
-            version, stats.fps, stats.cpu_usage, stats.process_memory_rss_bytes / 1024 / 1024, stats.gpu_time_micros / 1024 / 1024, stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count, stats.scheduler_iteration, stats.batch_size, stats.text_cache_size, stats.texture_cache_size
+            version, stats.fps, stats.cpu_usage, stats.process_memory_rss_bytes / 1024 / 1024, stats.gpu_memory_bytes / 1024 / 1024, stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count, stats.scheduler_iteration, stats.batch_size, stats.text_cache_size, stats.texture_cache_size
         );
         let stats_buffer = self.stats_buffer.get_or_insert_with(|| {
             glyphon::Buffer::new(&mut self.font_system, Metrics::new(12.0, 16.0))

@@ -48,6 +48,10 @@ pub struct JsRuntime {
 
 impl JsRuntime {
     pub fn new(tx: Sender<UiCommand>, fps_val: Arc<AtomicU32>, sys: Arc<Mutex<sysinfo::System>>) -> Self {
+        // The JS runtime can run synchronously, but ideally for true multi-process isolation,
+        // the entire evaluation loop should be delegated.
+        // As a first step, we simply spin up the runtime and keep it on the main thread for now,
+        // but architecture is marked for off-thread delegation in v0.39.0
         let runtime = Runtime::new().expect("failed to create QuickJS runtime");
         let context = Context::full(&runtime).expect("failed to create QuickJS context");
 

@@ -48,3 +48,4 @@
 - [ ] Python/Zig language bindings
 - [ ] Embedded platform targets (ARM/Linux)
 - [ ] Hot-reloading scripts
+- [ ] Multi-Process Isolation for QuickJS worker thread

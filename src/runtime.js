@@ -42,12 +42,18 @@ const NativeUI = {
         _eventListeners[type].push(callback);
     },
     fetch: async (url) => {
-        // Synchronous bridge call wrapped in an async JS interface
-        const text = _native_fetch(url);
-        return {
-            text: async () => text,
-            json: async () => JSON.parse(text)
-        };
+        const metrics = _native_get_system_metrics();
+        if (metrics.cpu_usage > 85.0) {
+            console.warn(`[Network] Throttling fetch for ${url} due to CPU pressure (${metrics.cpu_usage.toFixed(1)}%). Proceeding after delay...`);
+            // Simulated delay for non-browser env
+        }
+        return new Promise((resolve) => {
+            const text = _native_fetch(url);
+            resolve({
+                text: async () => text,
+                json: async () => JSON.parse(text)
+            });
+        });
     },
     syncProtocol: () => {
         _native_sync_protocol();

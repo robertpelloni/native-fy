@@ -63,3 +63,7 @@
 52. [DONE] Add `nativefy` convenience script to `package.json`.
 53. [DONE] Implement SVG/Vector graphics support using `resvg` and `tiny-skia`.
 54. [DONE] Add `NativeUI.createSvg` and `Components.Svg` to the JavaScript bridge.
+55. [DONE] Implement native Memory Introspection for GPU metrics and tracking.
+56. [DONE] Enhance Native Monitor Dashboard with Tooltips and explicit explanations.
+57. [ ] Build Python language bindings.
+58. [ ] Implement Multi-Process Isolation for QuickJS worker thread.
