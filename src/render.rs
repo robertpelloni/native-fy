@@ -652,8 +652,15 @@ impl RenderState {
             format!(
                 "MONITORING DASHBOARD | v{} | Status: HEALTHY | FPS: {} | Bridge: {}µs | Layout: {}µs | Render: {}µs | Nodes: {} | GPU Mem: {}MB\n\
                  [Tooltips]\n\
-                 - GPU Mem: Estimated size of internal wgpu Buffers and caching capacity constraints.",
-                version, stats.fps, stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count, self.estimated_gpu_memory() / 1024 / 1024
+                 - GPU Mem: Estimated size of internal wgpu Buffers and caching capacity constraints.
+                 [Performance Graphs]
+                 CPU | {}
+                 FPS | {}
+                 MEM | {} ",
+                version, stats.fps, stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count, self.estimated_gpu_memory() / 1024 / 1024,
+                "=".repeat((stats.cpu_usage as usize).min(50)),
+                "=".repeat((stats.fps as usize).min(60)),
+                "=".repeat(((stats.process_memory_rss_bytes / 1024 / 1024 / 10) as usize).min(50))
             )
         } else {
             format!(
