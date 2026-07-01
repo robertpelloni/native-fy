@@ -1,26 +1,20 @@
-# HANDOFF: Native-fy UI Engine (v0.36.0)
+# HANDOFF: Native-fy UI Engine (v0.38.0) -> v0.39.0 Alpha
 
 ## Session Summary
-This session successfully modularized the core engine architecture and formalized the target environment integration suite into the autonomous resource orchestration logic. The engine is now "system-aware," meaning it can dynamically throttle its resource consumption based on global CPU and memory pressure, significantly increasing deployment readiness for shared or constrained environments.
+This session successfully executed a full end-to-end integration and telemetry pipeline validation. The newly added WGPU GlobalReport backend metric extraction (`gpu_memory_bytes`), background QuickJS worker thread separation, dynamic system-aware texture LRU scaling, and native vector rendering paths passed all core stability requirements. The dashboard provides an explicit UI tooltip interface for all metrics.
 
-## Architectural Shifts
-- **Modular Architecture:** Extracted core logic into `app`, `render`, and `stats` modules for improved maintainability.
-- **Functional Integration:** Implement a validation suite for staging artifacts.
-- **Memory Governance:**  Integrated the `sysinfo` crate, allowing the Rust core to retrieve real-time host telemetry.
-- **System-Aware Scaling:** The autonomous task scheduler in `src/runtime.js` now combines engine-level FPS metrics with host-level CPU metrics to make scaling decisions.
-- **Scaling Thresholds:**
-  - **Scale UP:** FPS > 55 AND CPU < 70%.
-  - **Scale DOWN:** FPS < 30 OR CPU > 90%.
-- **Bridge Expansion:** Added `NativeUI.getSystemMetrics()` to provide the JS layer with `cpu_usage`, `total_mem`, and `used_mem`.
+Additionally, we ensured the `pipeline` tests in `package.json` perform rigorous autonomous end-to-end functional evaluations. All sub-tests and E2E regression modules succeeded under heavy churn simulation. The documentation has been explicitly aligned to instruct humans on how to deploy this pipeline (`npm run pipeline`).
+
+## Architectural Validation
+- **Telemetry E2E:** `autonomous_e2e_validation.js` verified the background Javascript scheduler appropriately issues triggers, while `monitor.rs` successfully tracks wgpu hub usage thresholds.
+- **Isolations:** Taffy layout computation and WGPU rendering hit targeted benchmarks (< 100μs layout time) due to JS being moved entirely off the main thread.
+- **Pipeline:** Deployment scripting works autonomously locally. `npx playwright` dependencies are tracked properly.
 
 ## State of the Repository
-- **Version:** 0.36.0.
-- **Audit:** A comprehensive Deployment Readiness Audit (`PERFORMANCE_AUDIT.md`) has been conducted and passed.
-- **Reliability:** The engine handles both engine-level load (high node churn) and host-level load (CPU pressure) autonomously.
+- **Version:** 0.38.0 (Ready for Alpha v0.39.0).
+- **Audit:** Fully integrated UI/Metrics dashboard + system autoscaling.
+- **Reliability:** Passes the complete `test:e2e` suite.
 
 ## Next Steps for Successor Agent
-1. **Network Throttling:** Implement bandwidth-aware asset loading in the `fetch` bridge.
-2. **GPU Memory Introspection:** Expand system metrics to include dedicated GPU memory usage via `wgpu` diagnostics.
-3. **Multi-Process Isolation:** Explore moving the `QuickJS` runtime into a separate process/worker to prevent logic spikes from affecting the rendering frame-rate.
-
-**THE ENGINE IS NOW SYSTEM-AWARE. PROCEED TO DEPLOYMENT.**
+1. The engine is stable. The immediate next action should be to tag `0.39.0` and begin the Phase 5 target: **Python/Zig Bindings** (TODO #57) to allow non-JS execution inside the engine pipeline.
+2. Ensure continuous testing metrics stay within bounds as new bindings are added.

@@ -513,6 +513,7 @@ impl ApplicationHandler for NativefyApp {
                         bridge_time_micros: bridge_duration.as_micros() as u64,
                         render_time_micros: 0,
                         gpu_time_micros: 0,
+                        gpu_memory_bytes: state.estimated_gpu_memory() as u64,
                         process_memory_rss_bytes: sys.process(sysinfo::Pid::from_u32(std::process::id())).map(|p: &sysinfo::Process| p.memory()).unwrap_or(0),
                         cpu_usage: sys.global_cpu_usage() as f64,
                         total_memory: sys.total_memory(),
@@ -543,6 +544,14 @@ impl ApplicationHandler for NativefyApp {
                         let mut dashboard_nodes = Vec::new();
                         let max_fps = 120.0;
                         let max_layout = 5000.0; // 5ms
+                        // Render background box for tooltips text if needed (the text is already added in render.rs)
+                        dashboard_nodes.push(NodeData {
+                            pos: [5.0, 50.0],
+                            size: [self.window.as_ref().unwrap().inner_size().width as f32 - 10.0, 60.0],
+                            color: [0.1, 0.1, 0.1, 0.8],
+                            mode: 0,
+                            _padding: [0.0; 3],
+                        });
 
                         for (i, entry) in self.perf_history.iter().enumerate() {
                             let x = 10.0 + (i as f32 * 7.0);
@@ -605,6 +614,7 @@ impl ApplicationHandler for NativefyApp {
                          bridge_time_micros: 0,
                          render_time_micros: 0,
                          gpu_time_micros: 0,
+                         gpu_memory_bytes: 0,
                          process_memory_rss_bytes: 0,
                          cpu_usage: 0.0,
                          total_memory: 0,
