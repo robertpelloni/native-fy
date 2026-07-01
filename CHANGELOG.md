@@ -1,3 +1,7 @@
+
+## [1.0.0-rc.1] - 2026-07-01
+- Autonomous protocol integration.
+- End-to-end pipeline automation.
 # CHANGELOG
 
 ## [0.38.0] - Autonomous Resource Validation Phase
