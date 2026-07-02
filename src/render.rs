@@ -483,7 +483,7 @@ impl RenderState {
         let stats_buffer = self.stats_buffer.get_or_insert_with(|| {
             glyphon::Buffer::new(&mut self.font_system, Metrics::new(12.0, 16.0))
         });
-        stats_buffer.set_size(&mut self.font_system, Some(self.size.width as f32), Some(100.0));
+        stats_buffer.set_size(&mut self.font_system, Some(self.size.width as f32), Some(400.0));
         stats_buffer.set_text(&mut self.font_system, &stats_text, glyphon::Attrs::new().family(Family::Monospace).color(glyphon::Color::rgb(0, 255, 0)), Shaping::Advanced);
         stats_buffer.shape_until_scroll(&mut self.font_system, false);
 
