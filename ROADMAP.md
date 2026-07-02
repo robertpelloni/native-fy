@@ -46,6 +46,6 @@
 - [x] Target Environment Functional Integration
 - [x] SVG/Vector graphics support
 - [x] Python/Zig language bindings
-- [ ] Embedded platform targets (ARM/Linux)
-- [ ] Hot-reloading scripts
+- [x] Embedded platform targets (ARM/Linux)
+- [x] Hot-reloading scripts
 - [x] Multi-Process Isolation for QuickJS worker thread

@@ -6,6 +6,7 @@ mod stats;
 mod render;
 mod app;
 mod python_bridge;
+mod hot_reload;
 
 use std::time::{Instant};
 use stats::{log_error, AppStats};
@@ -72,6 +73,14 @@ fn main() {
 
     println!("Starting Python IPC Bridge...");
     python_bridge::start_python_bridge(app.ui_tx.clone());
+
+    // Initialize Hot Reloader and keep it alive by tying it to the main scope
+    let _watcher = if std::env::var("PROD_MODE").is_err() {
+        println!("Starting File Hot-Reloader...");
+        hot_reload::start_hot_reloader(app.ui_tx.clone()).ok()
+    } else {
+        None
+    };
 
     println!("Starting event loop...");
     let _ = event_loop.run_app(&mut app);
