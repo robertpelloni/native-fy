@@ -654,11 +654,18 @@ impl RenderState {
                  [Performance Graphs]
                  CPU | {}
                  FPS | {}
-                 MEM | {} ",
+                 MEM | {}
+                 [Advanced Diagnostics & Tooltips]
+                 - [NodeCount]: {} - Number of flexbox primitives natively rendered.
+                 - [Layout Latency]: {}µs - Time taken by Taffy to resolve styling.
+                 - [Bridge Latency]: {}µs - QuickJS IPC serialization overhead.
+                 - [Render Latency]: {}µs - Total frame encode and swap buffers time.
+                 - [GPU Introspection]: {}MB - Tracked via wgpu GlobalReport allocated backends.",
                 version, stats.fps, stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count, self.estimated_gpu_memory() / 1024 / 1024,
                 "=".repeat((stats.cpu_usage as usize).min(50)),
                 "=".repeat((stats.fps as usize).min(60)),
-                "=".repeat(((stats.process_memory_rss_bytes / 1024 / 1024 / 10) as usize).min(50))
+                "=".repeat(((stats.process_memory_rss_bytes / 1024 / 1024 / 10) as usize).min(50)),
+                stats.node_count, stats.layout_time_micros, stats.bridge_time_micros, stats.render_time_micros, self.estimated_gpu_memory() / 1024 / 1024
             )
         } else {
             format!(
