@@ -15,5 +15,8 @@ This project builds an autonomous AI-native UI engine that extracts structural l
 ## Installation & Deployment
 Refer to [DEPLOY.md](DEPLOY.md) for full setup instructions, including the autonomous testing validation pipeline (`npm run pipeline`).
 
+## Status
+This project is now at v1.0.0 Release Candidate. The autonomous pipeline is fully functional.
+
 ## Architecture Constraints
 See [AGENTS.md](AGENTS.md) for strict architectural rules. No standard HTML DOM elements are allowed, everything is mapped directly to `AstRect` UI Node primitives.
