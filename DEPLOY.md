@@ -50,3 +50,9 @@ To run the application with live performance monitoring:
 node scripts/monitor.js
 ```
 *This will log system resources and engine metrics to `stability.log`.*
+
+## Full Validation Pipeline
+To run the full E2E autonomous pipeline (Extraction -> Compilation -> Test -> Benchmark -> Deploy -> E2E Validation):
+```bash
+npm run pipeline
+```

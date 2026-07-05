@@ -5,6 +5,8 @@ mod monitor;
 mod stats;
 mod render;
 mod app;
+mod python_bridge;
+mod hot_reload;
 
 use std::time::{Instant};
 use stats::{log_error, AppStats};
@@ -42,6 +44,7 @@ fn main() {
             bridge_time_micros: 0,
             render_time_micros: 0,
             gpu_time_micros: 0,
+            gpu_memory_bytes: 0,
             process_memory_rss_bytes: 0,
             cpu_usage: 0.0,
             total_memory: 0,
@@ -67,6 +70,17 @@ fn main() {
     };
 
     let mut app = NativefyApp::default();
+
+    println!("Starting Python IPC Bridge...");
+    python_bridge::start_python_bridge(app.ui_tx.clone());
+
+    // Initialize Hot Reloader and keep it alive by tying it to the main scope
+    let _watcher = if std::env::var("PROD_MODE").is_err() {
+        println!("Starting File Hot-Reloader...");
+        hot_reload::start_hot_reloader(app.ui_tx.clone()).ok()
+    } else {
+        None
+    };
 
     println!("Starting event loop...");
     let _ = event_loop.run_app(&mut app);
