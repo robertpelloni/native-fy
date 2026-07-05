@@ -1,6 +1,10 @@
 [package]
 name = "app"
+<<<<<<< HEAD
 version = "1.0.0-rc.1"
+=======
+version = "0.38.0"
+>>>>>>> origin/jules-17730063991437549333-18f4d6d0
 edition = "2024"
 
 [dependencies]
@@ -20,6 +24,7 @@ sysinfo = "0.33.1"
 resvg = "0.44.0"
 usvg = "0.44.0"
 tiny-skia = "0.11.4"
+<<<<<<< HEAD
 notify = "6.1.1"
 
 [profile.release]
@@ -28,3 +33,8 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
+=======
+notify = "8.2.0"
+pyo3 = { version = "0.20.0", features = ["auto-initialize"] }
+rodio = "0.22.2"
+>>>>>>> origin/jules-17730063991437549333-18f4d6d0

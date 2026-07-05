@@ -45,6 +45,7 @@ impl Monitor {
                     let mut text_threshold = 200;
                     let mut texture_threshold = 50;
 
+<<<<<<< HEAD
                     if std::env::var("VALIDATION_MODE").is_ok() {
                         // Force scaling decision in validation mode to prove telemetry works
                         batch_size = 250;
@@ -60,14 +61,26 @@ impl Monitor {
                         let _ = std::io::stdout().flush();
                     } else if fps > 55 && cpu_usage < 70.0 && stats.layout_time_micros < 1000 {
                         // High performance headroom: Aggressive scaling
+=======
+                    // Implement System-Aware Resource Orchestration
+                    let memory_usage_percent = (_used_mem as f64 / _total_mem as f64) * 100.0;
+
+                    if fps > 55 && cpu_usage < 60.0 && memory_usage_percent < 50.0 && stats.layout_time_micros < 1000 {
+                        // High performance headroom, plenty of RAM: Aggressive scaling
+>>>>>>> origin/jules-17730063991437549333-18f4d6d0
                         batch_size = 500;
                         text_threshold = 1000;
                         texture_threshold = 200;
                     } else if fps < 30 || cpu_usage > 90.0 || stats.layout_time_micros > 5000 {
-                        // Pressure detected: Tighten resources
-                        batch_size = 50;
+                        // CPU/Layout Pressure detected: Tighten batching to free main thread
+                        batch_size = 30;
                         text_threshold = 100;
                         texture_threshold = 20;
+                    } else if memory_usage_percent > 85.0 || stats.process_memory_rss_bytes > 500_000_000 {
+                        // Memory Pressure detected: Aggressive Cache Eviction
+                        batch_size = 50;
+                        text_threshold = 50;
+                        texture_threshold = 10;
                     }
 
                     let _ = self.tx.send(UiCommand::ScaleResources {

@@ -2,7 +2,9 @@ mod layout;
 mod ui_gen;
 mod runtime;
 mod monitor;
+mod python_bridge;
 mod stats;
+mod audio;
 mod render;
 mod app;
 mod python_bridge;
@@ -44,7 +46,11 @@ fn main() {
             bridge_time_micros: 0,
             render_time_micros: 0,
             gpu_time_micros: 0,
+<<<<<<< HEAD
             gpu_memory_bytes: 0,
+=======
+            hit_test_time_micros: 0,
+>>>>>>> origin/jules-17730063991437549333-18f4d6d0
             process_memory_rss_bytes: 0,
             cpu_usage: 0.0,
             total_memory: 0,
