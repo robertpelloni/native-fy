@@ -1,6 +1,5 @@
 use std::fs::OpenOptions;
 use std::io::Write;
-use chrono;
 
 pub const LOG_FILE: &str = "app.log";
 
@@ -13,6 +12,7 @@ pub struct AppStats {
     pub bridge_time_micros: u64,
     pub render_time_micros: u64,
     pub gpu_time_micros: u64,
+    pub hit_test_time_micros: u64,
     pub process_memory_rss_bytes: u64,
     pub cpu_usage: f64,
     pub total_memory: u64,

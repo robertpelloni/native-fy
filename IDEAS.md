@@ -2,7 +2,6 @@
 
 ## Feature Expansions
 - **Hot Reloading:** Inject updated QuickJS scripts without restarting the Rust process.
-- **Vector Graphics:** Integrate `vello` or `resvg` for SVG support and complex paths.
 - **Component Library:** Build a set of standard UI components (Buttons, Inputs, Modals) in JS.
 - **Accessibility:** Implement a native accessibility tree bridge for screen readers.
 

@@ -31,6 +31,7 @@ pub enum UiCommand {
     HealthCheck,
     Reload,
     RunPipeline,
+    RunAutonomousTask,
     Svg { content: String, styles: HashMap<String, String> },
     Screenshot { path: String },
     ToggleDashboard,
@@ -39,6 +40,9 @@ pub enum UiCommand {
         text_eviction_threshold: usize,
         texture_eviction_threshold: usize,
     },
+    HotReloadScript { script: String },
+    PlayAudio { id: String, url: String },
+    StopAudio { id: String },
 }
 
 pub struct JsRuntime {
@@ -48,6 +52,10 @@ pub struct JsRuntime {
 
 impl JsRuntime {
     pub fn new(tx: Sender<UiCommand>, fps_val: Arc<AtomicU32>, sys: Arc<Mutex<sysinfo::System>>) -> Self {
+        // The JS runtime can run synchronously, but ideally for true multi-process isolation,
+        // the entire evaluation loop should be delegated.
+        // As a first step, we simply spin up the runtime and keep it on the main thread for now,
+        // but architecture is marked for off-thread delegation in v0.39.0
         let runtime = Runtime::new().expect("failed to create QuickJS runtime");
         let context = Context::full(&runtime).expect("failed to create QuickJS context");
 
@@ -89,11 +97,10 @@ impl JsRuntime {
 
                 // Extract styles from JS object
                 for key_res in _styles.keys::<String>() {
-                    if let Ok(key) = key_res {
-                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                    if let Ok(key) = key_res
+                        && let Ok(val) = _styles.get::<String, String>(key.clone()) {
                             styles.insert(key, val);
                         }
-                    }
                 }
 
                 let _ = tx_create.send(UiCommand::CreateNode {
@@ -113,14 +120,13 @@ impl JsRuntime {
                 let tx = tx_fetch.clone();
                 let url_clone = url.clone();
                 std::thread::spawn(move || {
-                    if let Ok(resp) = reqwest::blocking::get(&url_clone) {
-                        if let Ok(bytes) = resp.bytes() {
+                    if let Ok(resp) = reqwest::blocking::get(&url_clone)
+                        && let Ok(bytes) = resp.bytes() {
                             let _ = tx.send(UiCommand::UpdateImage {
                                 url: url_clone,
                                 data: bytes.to_vec(),
                             });
                         }
-                    }
                 });
                 "Asset loading started...".to_string()
             })).unwrap();
@@ -135,15 +141,24 @@ impl JsRuntime {
                 let _ = tx_nfy.send(UiCommand::Nativefy { url });
             })).unwrap();
 
+            let tx_play = tx.clone();
+            globals.set("_native_play_audio", Function::new(ctx.clone(), move |id: String, url: String| {
+                let _ = tx_play.send(UiCommand::PlayAudio { id, url });
+            })).unwrap();
+
+            let tx_stop = tx.clone();
+            globals.set("_native_stop_audio", Function::new(ctx.clone(), move |id: String| {
+                let _ = tx_stop.send(UiCommand::StopAudio { id });
+            })).unwrap();
+
             let tx_btn = tx.clone();
             globals.set("_native_create_button", Function::new(ctx.clone(), move |text: String, _styles: rquickjs::Object| {
                 let mut styles = HashMap::new();
                 for key_res in _styles.keys::<String>() {
-                    if let Ok(key) = key_res {
-                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                    if let Ok(key) = key_res
+                        && let Ok(val) = _styles.get::<String, String>(key.clone()) {
                             styles.insert(key, val);
                         }
-                    }
                 }
                 let _ = tx_btn.send(UiCommand::CreateNativeButton { text, styles });
             })).unwrap();
@@ -152,11 +167,10 @@ impl JsRuntime {
             globals.set("_native_create_input", Function::new(ctx.clone(), move |placeholder: String, _styles: rquickjs::Object| {
                 let mut styles = HashMap::new();
                 for key_res in _styles.keys::<String>() {
-                    if let Ok(key) = key_res {
-                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                    if let Ok(key) = key_res
+                        && let Ok(val) = _styles.get::<String, String>(key.clone()) {
                             styles.insert(key, val);
                         }
-                    }
                 }
                 let _ = tx_input.send(UiCommand::CreateNativeInput { placeholder, styles });
             })).unwrap();
@@ -165,11 +179,10 @@ impl JsRuntime {
             globals.set("_native_create_list", Function::new(ctx.clone(), move |item_count: u32, _styles: rquickjs::Object| {
                 let mut styles = HashMap::new();
                 for key_res in _styles.keys::<String>() {
-                    if let Ok(key) = key_res {
-                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                    if let Ok(key) = key_res
+                        && let Ok(val) = _styles.get::<String, String>(key.clone()) {
                             styles.insert(key, val);
                         }
-                    }
                 }
                 let _ = tx_list.send(UiCommand::CreateNativeList { item_count, styles });
             })).unwrap();
@@ -188,11 +201,10 @@ impl JsRuntime {
             globals.set("_native_create_svg", Function::new(ctx.clone(), move |content: String, _styles: rquickjs::Object| {
                 let mut styles = HashMap::new();
                 for key_res in _styles.keys::<String>() {
-                    if let Ok(key) = key_res {
-                        if let Ok(val) = _styles.get::<String, String>(key.clone()) {
+                    if let Ok(key) = key_res
+                        && let Ok(val) = _styles.get::<String, String>(key.clone()) {
                             styles.insert(key, val);
                         }
-                    }
                 }
                 let _ = tx_svg.send(UiCommand::Svg { content, styles });
             })).unwrap();
@@ -200,6 +212,11 @@ impl JsRuntime {
             let tx_pipe = tx.clone();
             globals.set("_native_run_pipeline", Function::new(ctx.clone(), move || {
                 let _ = tx_pipe.send(UiCommand::RunPipeline);
+            })).unwrap();
+
+            let tx_task = tx.clone();
+            globals.set("_native_run_autonomous_task", Function::new(ctx.clone(), move || {
+                let _ = tx_task.send(UiCommand::RunAutonomousTask);
             })).unwrap();
 
             let tx_ss = tx.clone();
@@ -283,15 +300,48 @@ impl JsRuntime {
         });
     }
 
-    pub fn dispatch_click(&self, x: f32, y: f32) {
+    pub fn dispatch_click(&self, x: f32, y: f32, target_node_id: Option<u64>) {
         self.context.with(|ctx| {
             let globals = ctx.globals();
             if let Ok(handler) = globals.get::<_, Function>("_native_on_event") {
                 let data = rquickjs::Object::new(ctx.clone()).unwrap();
                 let _ = data.set("x", x);
                 let _ = data.set("y", y);
+                if let Some(id) = target_node_id {
+                    let _ = data.set("targetId", id as f64);
+                }
                 let _ = handler.call::<(String, rquickjs::Object), ()>(("click".to_string(), data));
             }
+        });
+    }
+
+    pub fn dispatch_cursor(&self, x: f32, y: f32, target_node_id: Option<u64>) {
+        self.context.with(|ctx| {
+            let globals = ctx.globals();
+            if let Ok(handler) = globals.get::<_, Function>("_native_on_event") {
+                let data = rquickjs::Object::new(ctx.clone()).unwrap();
+                let _ = data.set("x", x);
+                let _ = data.set("y", y);
+                if let Some(id) = target_node_id {
+                    let _ = data.set("targetId", id as f64);
+                }
+                let _ = handler.call::<(String, rquickjs::Object), ()>(("mousemove".to_string(), data));
+            }
+        });
+    }
+
+    pub fn update_stats(&self, stats: &crate::stats::AppStats) {
+        self.context.with(|ctx| {
+            let globals = ctx.globals();
+            let data = rquickjs::Object::new(ctx.clone()).unwrap();
+            let _ = data.set("fps", stats.fps);
+            let _ = data.set("cpu_usage", stats.cpu_usage);
+            let _ = data.set("memory_usage_percent", (stats.process_memory_rss_bytes as f64 / stats.total_memory as f64) * 100.0);
+            let _ = data.set("batch_size", stats.batch_size);
+            let _ = data.set("layout_time_micros", stats.layout_time_micros);
+
+            // Push these explicitly to globalThis._latest_stats in QuickJS
+            let _ = globals.set("_latest_stats", data);
         });
     }
 }

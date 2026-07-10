@@ -3,21 +3,38 @@ use taffy::prelude::NodeId;
 use std::collections::HashMap;
 
 pub fn generate_ui_tree(engine: &mut LayoutEngine) -> NodeId {
-    // Placeholder - will be overwritten by compiler_agent.js
-    let root_node = Node {
+
+    let new_node = Node {
         node_type: "Box".to_string(),
-        rect: AstRect { x: 0.0, y: 0.0, width: 800.0, height: 600.0 },
+        rect: AstRect { x: 256.0, y: 108.0, width: 768.0, height: 117.0 },
         styles: FlexStyles {
-            flex_direction: "column".to_string(),
-            padding: "20px".to_string(),
+            flex_direction: "row".to_string(),
+            padding: "0px".to_string(),
             margin: "0px".to_string(),
-            align_items: "center".to_string(),
-            justify_content: "center".to_string(),
+            align_items: "normal".to_string(),
+            justify_content: "normal".to_string(),
             unsupported: HashMap::new(),
         },
         text: None,
         value: None,
-        children: vec![],
+        children: vec![
+            Node {
+                node_type: "Text".to_string(),
+                rect: AstRect { x: 256.0, y: 108.0, width: 768.0, height: 28.0 },
+                styles: FlexStyles {
+                    flex_direction: "row".to_string(),
+                    padding: "0px".to_string(),
+                    margin: "0px".to_string(),
+                    align_items: "normal".to_string(),
+                    justify_content: "normal".to_string(),
+                    unsupported: HashMap::new(),
+                },
+                text: Some("Example Domain".to_string()),
+                value: None,
+                children: vec![],
+            }
+        ]
     };
-    engine.build_tree(&root_node).unwrap()
+    engine.build_tree(&new_node).unwrap_or(taffy::prelude::NodeId::new(0))
+
 }

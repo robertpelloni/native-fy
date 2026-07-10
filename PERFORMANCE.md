@@ -140,3 +140,425 @@
 - **Layout Time:** 78µs (Target: 2000µs)
 - **Frame Time:** 0µs (Target: 20000µs)
 - **Node Count:** 1
+
+<<<<<<< HEAD
+### Automated Benchmark Result (2026-06-30T21:39:45.234Z)
+- **Status:** PASSED
+- **Layout Time:** 43µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T21:41:41.748Z)
+- **Status:** PASSED
+- **Layout Time:** 41µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T21:45:25.037Z)
+- **Status:** PASSED
+- **Layout Time:** 47µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T21:48:20.842Z)
+- **Status:** PASSED
+- **Layout Time:** 36µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T21:48:59.017Z)
+- **Status:** PASSED
+- **Layout Time:** 69µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T21:51:52.012Z)
+- **Status:** PASSED
+- **Layout Time:** 90µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T21:55:17.197Z)
+- **Status:** PASSED
+- **Layout Time:** 64µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T21:56:41.966Z)
+- **Status:** PASSED
+- **Layout Time:** 97µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:03:03.551Z)
+- **Status:** PASSED
+- **Layout Time:** 1585µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:04:07.487Z)
+- **Status:** PASSED
+- **Layout Time:** 49µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:05:12.491Z)
+- **Status:** PASSED
+- **Layout Time:** 57µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:06:04.388Z)
+- **Status:** PASSED
+- **Layout Time:** 113µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:08:39.378Z)
+- **Status:** PASSED
+- **Layout Time:** 58µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:10:24.070Z)
+- **Status:** PASSED
+- **Layout Time:** 63µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:11:57.378Z)
+- **Status:** PASSED
+- **Layout Time:** 63µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:14:27.508Z)
+- **Status:** PASSED
+- **Layout Time:** 64µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:15:29.099Z)
+- **Status:** PASSED
+- **Layout Time:** 70µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:17:38.166Z)
+- **Status:** PASSED
+- **Layout Time:** 59µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:18:08.650Z)
+- **Status:** PASSED
+- **Layout Time:** 47µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:26:48.554Z)
+- **Status:** PASSED
+- **Layout Time:** 58µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:29:28.373Z)
+- **Status:** PASSED
+- **Layout Time:** 103µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:32:50.898Z)
+- **Status:** PASSED
+- **Layout Time:** 60µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:34:31.612Z)
+- **Status:** PASSED
+- **Layout Time:** 91µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-06-30T22:35:52.181Z)
+- **Status:** PASSED
+- **Layout Time:** 85µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T00:04:20.356Z)
+- **Status:** PASSED
+- **Layout Time:** 42µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T00:33:17.544Z)
+- **Status:** PASSED
+- **Layout Time:** 86µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T00:38:27.017Z)
+- **Status:** PASSED
+- **Layout Time:** 54µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T01:06:08.981Z)
+- **Status:** PASSED
+- **Layout Time:** 55µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T01:22:26.497Z)
+- **Status:** PASSED
+- **Layout Time:** 57µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T04:10:01.314Z)
+- **Status:** PASSED
+- **Layout Time:** 57µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T05:04:25.443Z)
+- **Status:** PASSED
+- **Layout Time:** 50µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T05:57:01.792Z)
+- **Status:** PASSED
+- **Layout Time:** 36µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T06:09:26.126Z)
+- **Status:** PASSED
+- **Layout Time:** 46µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T06:57:24.366Z)
+- **Status:** PASSED
+- **Layout Time:** 39µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T08:49:55.297Z)
+- **Status:** PASSED
+- **Layout Time:** 42µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T09:45:24.054Z)
+- **Status:** FAILED
+- **Layout Time:** 5675µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T09:47:52.203Z)
+- **Status:** FAILED
+- **Layout Time:** 2056µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T09:52:26.719Z)
+- **Status:** PASSED
+- **Layout Time:** 467µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T12:08:38.047Z)
+- **Status:** PASSED
+- **Layout Time:** 64µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T15:53:40.053Z)
+- **Status:** PASSED
+- **Layout Time:** 106µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T16:04:49.805Z)
+- **Status:** PASSED
+- **Layout Time:** 69µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T18:03:27.468Z)
+- **Status:** PASSED
+- **Layout Time:** 1619µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T20:14:53.090Z)
+- **Status:** PASSED
+- **Layout Time:** 73µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-01T23:59:45.939Z)
+- **Status:** PASSED
+- **Layout Time:** 1898µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T01:10:46.418Z)
+- **Status:** PASSED
+- **Layout Time:** 65µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T02:05:06.060Z)
+- **Status:** PASSED
+- **Layout Time:** 94µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T02:36:07.821Z)
+- **Status:** PASSED
+- **Layout Time:** 2213µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T03:56:37.269Z)
+- **Status:** PASSED
+- **Layout Time:** 76µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T04:51:09.622Z)
+- **Status:** PASSED
+- **Layout Time:** 3370µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T06:54:24.754Z)
+- **Status:** PASSED
+- **Layout Time:** 3784µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T09:00:44.146Z)
+- **Status:** PASSED
+- **Layout Time:** 3180µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T13:47:38.527Z)
+- **Status:** PASSED
+- **Layout Time:** 2566µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T15:58:57.105Z)
+- **Status:** PASSED
+- **Layout Time:** 5329µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T17:01:00.769Z)
+- **Status:** PASSED
+- **Layout Time:** 2334µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T18:07:19.370Z)
+- **Status:** PASSED
+- **Layout Time:** 2863µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T20:01:23.792Z)
+- **Status:** PASSED
+- **Layout Time:** 3562µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T20:49:30.514Z)
+- **Status:** PASSED
+- **Layout Time:** 3752µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T21:48:52.973Z)
+- **Status:** PASSED
+- **Layout Time:** 3415µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T22:48:12.235Z)
+- **Status:** PASSED
+- **Layout Time:** 5225µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-02T23:56:56.868Z)
+- **Status:** PASSED
+- **Layout Time:** 2468µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-03T06:27:42.385Z)
+- **Status:** PASSED
+- **Layout Time:** 2144µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+
+### Automated Benchmark Result (2026-07-03T11:19:33.182Z)
+- **Status:** PASSED
+- **Layout Time:** 3347µs (Target: 25000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 1
+=======
+### Automated Benchmark Result (2026-06-26T21:46:14.545Z)
+- **Status:** PASSED
+- **Layout Time:** 67µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 2
+
+### Automated Benchmark Result (2026-06-27T07:54:57.603Z)
+- **Status:** PASSED
+- **Layout Time:** 77µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 2
+
+### Automated Benchmark Result (2026-06-27T09:10:26.051Z)
+- **Status:** PASSED
+- **Layout Time:** 69µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 2
+
+### Automated Benchmark Result (2026-06-28T00:24:58.174Z)
+- **Status:** PASSED
+- **Layout Time:** 48µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 2
+
+### Automated Benchmark Result (2026-06-28T00:42:34.382Z)
+- **Status:** PASSED
+- **Layout Time:** 55µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 2
+
+### Automated Benchmark Result (2026-06-28T01:32:00.068Z)
+- **Status:** PASSED
+- **Layout Time:** 55µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 2
+
+### Automated Benchmark Result (2026-06-30T04:08:04.825Z)
+- **Status:** PASSED
+- **Layout Time:** 86µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 2
+
+### Automated Benchmark Result (2026-06-30T07:48:06.862Z)
+- **Status:** PASSED
+- **Layout Time:** 64µs (Target: 2000µs)
+- **Frame Time:** 0µs (Target: 20000µs)
+- **Node Count:** 2
+>>>>>>> origin/jules-17730063991437549333-18f4d6d0

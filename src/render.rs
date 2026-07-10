@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{Instant};
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
@@ -63,6 +63,7 @@ pub struct NodeData {
 }
 
 pub struct RenderState {
+    pub instance: std::sync::Arc<wgpu::Instance>,
     pub surface: wgpu::Surface<'static>,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
@@ -128,9 +129,7 @@ impl RenderState {
 
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps.formats.iter()
-            .copied()
-            .filter(|f| f.is_srgb())
-            .next()
+            .copied().find(|f| f.is_srgb())
             .unwrap_or(surface_caps.formats[0]);
 
         let mut usage = wgpu::TextureUsages::RENDER_ATTACHMENT;
@@ -329,6 +328,7 @@ impl RenderState {
         let text_renderer = TextRenderer::new(&mut text_atlas, &device, wgpu::MultisampleState::default(), None);
 
         Ok(Self {
+            instance: std::sync::Arc::new(instance),
             surface,
             device,
             queue,
@@ -441,6 +441,31 @@ impl RenderState {
         }
     }
 
+    pub fn estimated_gpu_memory(&self) -> usize {
+        // We use the wgpu instance to generate a report, allowing us to peek into
+        // underlying resource counts allocated per backend.
+        let report = self.instance.generate_report();
+
+        let mut allocated_bytes = 0;
+
+        // `generate_report()` returns Option<GlobalReport> on wgpu 0.23.
+        if let Some(r) = report {
+            let hub = r.hub;
+            // Map raw allocation counts to byte sizes using structural knowledge
+            allocated_bytes += hub.buffers.num_allocated * hub.buffers.element_size;
+            allocated_bytes += hub.textures.num_allocated * hub.textures.element_size;
+            allocated_bytes += hub.texture_views.num_allocated * hub.texture_views.element_size;
+            allocated_bytes += hub.bind_groups.num_allocated * hub.bind_groups.element_size;
+        }
+
+        // The structural size gives us a baseline, but texture and buffer backing bytes are larger
+        let node_buffer_bytes = std::mem::size_of::<NodeData>() * self.node_buffer_capacity;
+        let texture_backing_bytes = self.textures.len() * 512 * 512 * 4; // Average 1MB backing per texture
+        let atlas_bytes = 4 * 1024 * 1024; // Glyphon atlas
+
+        allocated_bytes + node_buffer_bytes + texture_backing_bytes + atlas_bytes
+    }
+
     pub fn render_dashboard(&mut self, stats: &AppStats, node_count: u32, screenshot_path: Option<String>) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
@@ -449,13 +474,16 @@ impl RenderState {
         // Update stats text
         let version = env!("CARGO_PKG_VERSION");
         let stats_text = format!(
-            "MONITORING DASHBOARD | v{} | Status: HEALTHY | FPS: {} | CPU: {:.1}% | Mem: {}MB | Bridge: {}µs | Layout: {}µs | Render: {}µs | Nodes: {} | Iter: {} | Batch: {} | Cache(T/TX): {}/{}",
-            version, stats.fps, stats.cpu_usage, stats.process_memory_rss_bytes / 1024 / 1024, stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count, stats.scheduler_iteration, stats.batch_size, stats.text_cache_size, stats.texture_cache_size
+            "MONITORING DASHBOARD | v{} | Status: HEALTHY | FPS: {} | CPU: {:.1}% | Mem: {}MB | GPU Mem: {}MB | Bridge: {}µs | Layout: {}µs | Render: {}µs | Nodes: {} | Iter: {} | Batch: {} | Cache(T/TX): {}/{}\n\
+             [Tooltips]\n\
+             - FPS (Green bar): Target 60. Layout (Orange bar): Taffy flexbox calculation time. Bridge (Blue bar): JS execution to Rust engine overhead.\n\
+             - GPU Mem: Estimated size of NodeBuffers and Texture capacity. Cache: Text/Texture LRU tracking limits. Iter: Watchdog maintenance loops.",
+            version, stats.fps, stats.cpu_usage, stats.process_memory_rss_bytes / 1024 / 1024, stats.gpu_memory_bytes / 1024 / 1024, stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count, stats.scheduler_iteration, stats.batch_size, stats.text_cache_size, stats.texture_cache_size
         );
         let stats_buffer = self.stats_buffer.get_or_insert_with(|| {
             glyphon::Buffer::new(&mut self.font_system, Metrics::new(12.0, 16.0))
         });
-        stats_buffer.set_size(&mut self.font_system, Some(self.size.width as f32), Some(20.0));
+        stats_buffer.set_size(&mut self.font_system, Some(self.size.width as f32), Some(400.0));
         stats_buffer.set_text(&mut self.font_system, &stats_text, glyphon::Attrs::new().family(Family::Monospace).color(glyphon::Color::rgb(0, 255, 0)), Shaping::Advanced);
         stats_buffer.shape_until_scroll(&mut self.font_system, false);
 
@@ -549,7 +577,7 @@ impl RenderState {
                 self.text_buffers.remove(&entries[i].0);
             }
             #[cfg(debug_assertions)]
-            if !std::env::var("PROD_MODE").is_ok() {
+            if std::env::var("PROD_MODE").is_err() {
                 println!("Memory: Evicted {} text buffers (LRU).", evict_count);
             }
         }
@@ -620,8 +648,24 @@ impl RenderState {
             String::new()
         } else if std::env::var("DASHBOARD_MODE").is_ok() {
             format!(
-                "MONITORING DASHBOARD | v{} | Status: HEALTHY | FPS: {} | Bridge: {}µs | Layout: {}µs | Render: {}µs | Nodes: {}",
-                version, stats.fps, stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count
+                "MONITORING DASHBOARD | v{} | Status: HEALTHY | FPS: {} | Bridge: {}µs | Layout: {}µs | Render: {}µs | Nodes: {} | GPU Mem: {}MB\n\
+                 [Tooltips]\n\
+                 - GPU Mem: Estimated size of internal wgpu Buffers and caching capacity constraints.
+                 [Performance Graphs]
+                 CPU | {}
+                 FPS | {}
+                 MEM | {}
+                 [Advanced Diagnostics & Tooltips]
+                 - [NodeCount]: {} - Number of flexbox primitives natively rendered.
+                 - [Layout Latency]: {}µs - Time taken by Taffy to resolve styling.
+                 - [Bridge Latency]: {}µs - QuickJS IPC serialization overhead.
+                 - [Render Latency]: {}µs - Total frame encode and swap buffers time.
+                 - [GPU Introspection]: {}MB - Tracked via wgpu GlobalReport allocated backends.",
+                version, stats.fps, stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count, self.estimated_gpu_memory() / 1024 / 1024,
+                "=".repeat((stats.cpu_usage as usize).min(50)),
+                "=".repeat((stats.fps as usize).min(60)),
+                "=".repeat(((stats.process_memory_rss_bytes / 1024 / 1024 / 10) as usize).min(50)),
+                stats.node_count, stats.layout_time_micros, stats.bridge_time_micros, stats.render_time_micros, self.estimated_gpu_memory() / 1024 / 1024
             )
         } else {
             format!(
@@ -633,7 +677,7 @@ impl RenderState {
         let stats_buffer = self.stats_buffer.get_or_insert_with(|| {
             glyphon::Buffer::new(&mut self.font_system, Metrics::new(12.0, 16.0))
         });
-        stats_buffer.set_size(&mut self.font_system, Some(self.size.width as f32), Some(20.0));
+        stats_buffer.set_size(&mut self.font_system, Some(self.size.width as f32), Some(60.0));
         stats_buffer.set_text(&mut self.font_system, &stats_text, glyphon::Attrs::new().family(Family::Monospace).color(glyphon::Color::rgb(0, 255, 0)), Shaping::Advanced);
         stats_buffer.shape_until_scroll(&mut self.font_system, false);
 
@@ -752,7 +796,7 @@ impl RenderState {
         let _render_duration = render_start.elapsed();
         // Skip per-frame console logging in production/performance runs
         #[cfg(debug_assertions)]
-        if !std::env::var("PROD_MODE").is_ok() {
+        if std::env::var("PROD_MODE").is_err() {
              println!("Performance: Frame rendered in {:?}", _render_duration);
         }
 
@@ -781,8 +825,8 @@ impl RenderState {
 
             if is_image {
                 texture_url = engine.get_value(id).cloned();
-            } else if is_svg {
-                if let Some(svg_content) = engine.get_value(id) {
+            } else if is_svg
+                && let Some(svg_content) = engine.get_value(id) {
                     let cache_key = format!("svg:{:?}", id);
                     if !self.textures.contains_key(&cache_key) {
                         // Render SVG to texture
@@ -792,7 +836,6 @@ impl RenderState {
                     }
                     texture_url = Some(cache_key);
                 }
-            }
 
             nodes.push(NodeData {
                 pos: [x, y],
@@ -817,11 +860,39 @@ impl RenderState {
     }
 
     fn render_svg_to_rgba(&self, svg_content: &str, width: f32, height: f32) -> Option<Vec<u8>> {
-        let opt = usvg::Options::default();
+        if width <= 0.0 || height <= 0.0 {
+            return None;
+        }
+
+        let mut opt = usvg::Options::default();
+        let mut fontdb = usvg::fontdb::Database::new();
+        fontdb.load_system_fonts();
+        opt.fontdb = std::sync::Arc::new(fontdb);
         let rtree = usvg::Tree::from_str(svg_content, &opt).ok()?;
 
+<<<<<<< HEAD
+        // Scale the SVG proportionally to the requested layout dimensions
+        let svg_size = rtree.size();
+        let scale_x = width / svg_size.width();
+        let scale_y = height / svg_size.height();
+
+        // Preserve aspect ratio mapping inside the UI bounds
+        let scale = scale_x.min(scale_y);
+        let transform = tiny_skia::Transform::from_scale(scale, scale);
+
         let mut pixmap = tiny_skia::Pixmap::new(width as u32, height as u32)?;
-        resvg::render(&rtree, tiny_skia::Transform::default(), &mut pixmap.as_mut());
+        // Render into the pixmap applying proportional transformation
+=======
+        // Scale to fit requested dimensions
+        let intrinsic_size = rtree.size();
+        let scale_x = width / intrinsic_size.width();
+        let scale_y = height / intrinsic_size.height();
+
+        let transform = tiny_skia::Transform::from_scale(scale_x, scale_y);
+
+        let mut pixmap = tiny_skia::Pixmap::new(width as u32, height as u32)?;
+>>>>>>> origin/jules-17730063991437549333-18f4d6d0
+        resvg::render(&rtree, transform, &mut pixmap.as_mut());
 
         Some(pixmap.data().to_vec())
     }

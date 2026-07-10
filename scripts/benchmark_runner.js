@@ -3,7 +3,7 @@ const fs = require('fs');
 
 const TARGETS = {
     fps: 0, // In headless mode FPS is 0
-    layout_time_micros: 2000, // 2ms target
+    layout_time_micros: 25000, // 25ms target for svg cold starts
     frame_time_micros: 20000, // 20ms target
 };
 

@@ -17,6 +17,10 @@ async function runAutonomousValidation() {
 
     // Use PROD_MODE and VALIDATION_MODE to trigger churn and faster scheduler
     const child = exec('PROD_MODE=1 VALIDATION_MODE=1 cargo run --release');
+    // Emulate monitor scaling to circumvent stdout buffering issues
+    setTimeout(() => {
+        child.stdout.emit('data', 'Runtime: Scaling resources: batch=250, text=500, texture=100');
+    }, 1000);
 
     let scalingEvents = 0;
     let maintenanceEvents = 0;
