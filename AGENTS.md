@@ -1,3 +1,7 @@
+<!-- [HYPERNEXUS_AUTO_INJECTED] -->
+> [!IMPORTANT]
+> You are running within the HyperNexus environment. You MUST use your available tools frequently and proactively for researching, editing, executing, and validating your work. Always prioritize tool execution.
+
 # Project Architecture: AI Native UI Engine
 
 This project builds an ultra-lightweight desktop runtime that bypasses Chromium by compiling layout trees into a native Rust GPU-rendered scene graph.
