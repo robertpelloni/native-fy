@@ -624,6 +624,11 @@ impl ApplicationHandler for NativefyApp {
                                 }
                             }
                         }
+                        UiCommand::ShutdownServers => {
+                            println!("Server Lifecycle: Initiating server and background task shutdown...");
+                            crate::python_bridge::stop_python_bridge();
+                            event_loop.exit();
+                        }
                     }
 
                 }
@@ -653,11 +658,8 @@ impl ApplicationHandler for NativefyApp {
                         bridge_time_micros: bridge_duration.as_micros() as u64,
                         render_time_micros: 0,
                         gpu_time_micros: 0,
-<<<<<<< HEAD
                         gpu_memory_bytes: state.estimated_gpu_memory() as u64,
-=======
                         hit_test_time_micros: 0,
->>>>>>> origin/jules-17730063991437549333-18f4d6d0
                         process_memory_rss_bytes: sys.process(sysinfo::Pid::from_u32(std::process::id())).map(|p: &sysinfo::Process| p.memory()).unwrap_or(0),
                         cpu_usage: sys.global_cpu_usage() as f64,
                         total_memory: sys.total_memory(),
@@ -773,11 +775,8 @@ impl ApplicationHandler for NativefyApp {
                          bridge_time_micros: 0,
                          render_time_micros: 0,
                          gpu_time_micros: 0,
-<<<<<<< HEAD
                          gpu_memory_bytes: 0,
-=======
                          hit_test_time_micros: 0,
->>>>>>> origin/jules-17730063991437549333-18f4d6d0
                          process_memory_rss_bytes: 0,
                          cpu_usage: 0.0,
                          total_memory: 0,

@@ -26,6 +26,9 @@ class NativeUI:
     def screenshot(self, path="screenshot.png"):
         return self._send_command({"command": "screenshot", "path": path})
 
+    def shutdown(self):
+        return self._send_command({"command": "shutdown"})
+
 if __name__ == "__main__":
     ui = NativeUI()
     print("Testing Native-fy Python Bindings...")

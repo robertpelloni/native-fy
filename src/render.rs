@@ -473,12 +473,19 @@ impl RenderState {
 
         // Update stats text
         let version = env!("CARGO_PKG_VERSION");
+        let cpu_bar = "█".repeat(((stats.cpu_usage / 2.0) as usize).min(30));
+        let fps_bar = "█".repeat(((stats.fps / 2) as usize).min(30));
+        let mem_mb = stats.process_memory_rss_bytes / 1024 / 1024;
+        let mem_bar = "█".repeat(((mem_mb / 20) as usize).min(30));
+        let gpu_mb = stats.gpu_memory_bytes / 1024 / 1024;
+        let gpu_bar = "█".repeat(((gpu_mb / 5) as usize).min(30));
+
         let stats_text = format!(
-            "MONITORING DASHBOARD | v{} | Status: HEALTHY | FPS: {} | CPU: {:.1}% | Mem: {}MB | GPU Mem: {}MB | Bridge: {}µs | Layout: {}µs | Render: {}µs | Nodes: {} | Iter: {} | Batch: {} | Cache(T/TX): {}/{}\n\
-             [Tooltips]\n\
-             - FPS (Green bar): Target 60. Layout (Orange bar): Taffy flexbox calculation time. Bridge (Blue bar): JS execution to Rust engine overhead.\n\
-             - GPU Mem: Estimated size of NodeBuffers and Texture capacity. Cache: Text/Texture LRU tracking limits. Iter: Watchdog maintenance loops.",
-            version, stats.fps, stats.cpu_usage, stats.process_memory_rss_bytes / 1024 / 1024, stats.gpu_memory_bytes / 1024 / 1024, stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count, stats.scheduler_iteration, stats.batch_size, stats.text_cache_size, stats.texture_cache_size
+            "══════════════════════════════════════════════════════════════════════════════════════════\n             █ UNIFIED NATIVE-FY CONTROL DASHBOARD | v{} | SYSTEM HEALTH: OPTIMAL [?]                █\n             ══════════════════════════════════════════════════════════════════════════════════════════\n             [CORE TELEMETRY & GAUGES]\n             • FPS [?]   : {:3} fps  | {:<30} | Target: 60 fps\n             • CPU [?]   : {:5.1}%   | {:<30} | System CPU Usage\n             • RAM [?]   : {:4} MB  | {:<30} | RSS Process Footprint\n             • GPU [?]   : {:4} MB  | {:<30} | VRAM Buffers & Textures\n             ──────────────────────────────────────────────────────────────────────────────────────────\n             [PIPELINE LATENCIES & METRICS]\n             • Bridge [?]: {:5} µs (QuickJS -> Rust IPC serialization latency)\n             • Layout [?]: {:5} µs (Taffy Flexbox tree resolution latency)\n             • Render [?]: {:5} µs (WGPU draw encoder & command buffer execution)\n             • Nodes  [?]: {:5}    (Active UI Flexbox scene graph primitives)\n             ──────────────────────────────────────────────────────────────────────────────────────────\n             [RESOURCE ORCHESTRATION & LRU CACHES]\n             • Batch Size [?]: {:4} nodes/batch  | Text Cache [?]: {:3}  | Texture Cache [?]: {:3}\n             ──────────────────────────────────────────────────────────────────────────────────────────\n             [SYSTEM TRAY & SERVER LIFECYCLE STATUS]\n             • Python IPC Bridge : [ONLINE] 127.0.0.1:9090 (Native socket listener)\n             • Hot Reloader      : [ACTIVE] File watcher tracking src/runtime.js\n             • JS Task Scheduler : [RUNNING] Iteration #{}\n             • Server Control    : Send UiCommand::ShutdownServers or call shutdownServers() to quit\n             ══════════════════════════════════════════════════════════════════════════════════════════",
+            version, stats.fps, fps_bar, stats.cpu_usage, cpu_bar, mem_mb, mem_bar, gpu_mb, gpu_bar,
+            stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count,
+            stats.batch_size, stats.text_cache_size, stats.texture_cache_size,
+            stats.scheduler_iteration
         );
         let stats_buffer = self.stats_buffer.get_or_insert_with(|| {
             glyphon::Buffer::new(&mut self.font_system, Metrics::new(12.0, 16.0))
@@ -647,26 +654,19 @@ impl RenderState {
         let stats_text = if std::env::var("PROD_MODE").is_ok() {
             String::new()
         } else if std::env::var("DASHBOARD_MODE").is_ok() {
-            format!(
-                "MONITORING DASHBOARD | v{} | Status: HEALTHY | FPS: {} | Bridge: {}µs | Layout: {}µs | Render: {}µs | Nodes: {} | GPU Mem: {}MB\n\
-                 [Tooltips]\n\
-                 - GPU Mem: Estimated size of internal wgpu Buffers and caching capacity constraints.
-                 [Performance Graphs]
-                 CPU | {}
-                 FPS | {}
-                 MEM | {}
-                 [Advanced Diagnostics & Tooltips]
-                 - [NodeCount]: {} - Number of flexbox primitives natively rendered.
-                 - [Layout Latency]: {}µs - Time taken by Taffy to resolve styling.
-                 - [Bridge Latency]: {}µs - QuickJS IPC serialization overhead.
-                 - [Render Latency]: {}µs - Total frame encode and swap buffers time.
-                 - [GPU Introspection]: {}MB - Tracked via wgpu GlobalReport allocated backends.",
-                version, stats.fps, stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros, stats.node_count, self.estimated_gpu_memory() / 1024 / 1024,
-                "=".repeat((stats.cpu_usage as usize).min(50)),
-                "=".repeat((stats.fps as usize).min(60)),
-                "=".repeat(((stats.process_memory_rss_bytes / 1024 / 1024 / 10) as usize).min(50)),
-                stats.node_count, stats.layout_time_micros, stats.bridge_time_micros, stats.render_time_micros, self.estimated_gpu_memory() / 1024 / 1024
-            )
+            {
+                let mem_mb = stats.process_memory_rss_bytes / 1024 / 1024;
+                let gpu_mb = stats.gpu_memory_bytes / 1024 / 1024;
+                format!(
+                    "╔════════════════════════════════════════════════════════════════════════════════════════╗\n                     ║ UNIFIED NATIVE-FY CONTROL DASHBOARD | v{} | HEALTH: OPTIMAL [?]                      ║\n                     ╠════════════════════════════════════════════════════════════════════════════════════════╣\n                     ║ [Core Telemetry] FPS: {:3} [?] | CPU: {:5.1}% [?] | RAM: {:4}MB [?] | GPU: {:4}MB [?]    ║\n                     ║ [Latencies]      Bridge: {:5}µs [?] | Layout: {:5}µs [?] | Render: {:5}µs [?]         ║\n                     ║ [Graphs] CPU | {:<30} ║\n                     ║          FPS | {:<30} ║\n                     ║          RAM | {:<30} ║\n                     ║ [Services]  IPC Bridge: [ONLINE :9090] | Hot Reloader: [ACTIVE] | Nodes: {:4}        ║\n                     ╚════════════════════════════════════════════════════════════════════════════════════════╝",
+                    version, stats.fps, stats.cpu_usage, mem_mb, gpu_mb,
+                    stats.bridge_time_micros, stats.layout_time_micros, stats.render_time_micros,
+                    "█".repeat(((stats.cpu_usage / 2.0) as usize).min(30)),
+                    "█".repeat(((stats.fps / 2) as usize).min(30)),
+                    "█".repeat(((mem_mb / 20) as usize).min(30)),
+                    stats.node_count
+                )
+            }
         } else {
             format!(
                 "v{} | FPS: {} | Layout: {}µs | Nodes: {} | Protocol: ACTIVE (AUTO-SYNC)",
@@ -870,7 +870,6 @@ impl RenderState {
         opt.fontdb = std::sync::Arc::new(fontdb);
         let rtree = usvg::Tree::from_str(svg_content, &opt).ok()?;
 
-<<<<<<< HEAD
         // Scale the SVG proportionally to the requested layout dimensions
         let svg_size = rtree.size();
         let scale_x = width / svg_size.width();
@@ -882,16 +881,6 @@ impl RenderState {
 
         let mut pixmap = tiny_skia::Pixmap::new(width as u32, height as u32)?;
         // Render into the pixmap applying proportional transformation
-=======
-        // Scale to fit requested dimensions
-        let intrinsic_size = rtree.size();
-        let scale_x = width / intrinsic_size.width();
-        let scale_y = height / intrinsic_size.height();
-
-        let transform = tiny_skia::Transform::from_scale(scale_x, scale_y);
-
-        let mut pixmap = tiny_skia::Pixmap::new(width as u32, height as u32)?;
->>>>>>> origin/jules-17730063991437549333-18f4d6d0
         resvg::render(&rtree, transform, &mut pixmap.as_mut());
 
         Some(pixmap.data().to_vec())

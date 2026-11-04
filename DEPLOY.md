@@ -51,7 +51,6 @@ On servers without a GPU/Display:
 1. Use `XVFB` or similar if windowing is required.
 2. Monitor `app.log` for output as no window will be visible.
 3. Rendering may fail unless a software Vulkan driver (like `lavapipe`) is present.
-<<<<<<< HEAD
 
 ## Monitoring Stability
 To run the application with live performance monitoring:
@@ -65,5 +64,3 @@ To run the full E2E autonomous pipeline (Extraction -> Compilation -> Test -> Be
 ```bash
 npm run pipeline
 ```
-=======
->>>>>>> origin/jules-17730063991437549333-18f4d6d0
