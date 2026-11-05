@@ -44,8 +44,8 @@ impl Monitor {
                     let mut batch_size = 100;
                     let mut text_threshold = 200;
                     let mut texture_threshold = 50;
+                    let memory_usage_percent = (_used_mem as f64 / _total_mem as f64) * 100.0;
 
-<<<<<<< HEAD
                     if std::env::var("VALIDATION_MODE").is_ok() {
                         // Force scaling decision in validation mode to prove telemetry works
                         batch_size = 250;
@@ -61,13 +61,6 @@ impl Monitor {
                         let _ = std::io::stdout().flush();
                     } else if fps > 55 && cpu_usage < 70.0 && stats.layout_time_micros < 1000 {
                         // High performance headroom: Aggressive scaling
-=======
-                    // Implement System-Aware Resource Orchestration
-                    let memory_usage_percent = (_used_mem as f64 / _total_mem as f64) * 100.0;
-
-                    if fps > 55 && cpu_usage < 60.0 && memory_usage_percent < 50.0 && stats.layout_time_micros < 1000 {
-                        // High performance headroom, plenty of RAM: Aggressive scaling
->>>>>>> origin/jules-17730063991437549333-18f4d6d0
                         batch_size = 500;
                         text_threshold = 1000;
                         texture_threshold = 200;

@@ -7,3 +7,5 @@ perf_metrics.json
 ui_ast.json
 staging/
 *_REPORT.md
+__pycache__/
+*.pyc

@@ -99,6 +99,12 @@ const NativeUI = {
     scaleResources: (batchSize, textThreshold, textureThreshold) => {
         _native_scale_resources(batchSize, textThreshold, textureThreshold);
     },
+    shutdownServers: () => {
+        console.log("NativeUI: Requesting server and background runner shutdown...");
+        if (typeof _native_shutdown_servers !== "undefined") {
+            _native_shutdown_servers();
+        }
+    },
     createSvg: (content, styles) => {
         return _native_create_svg(content, styles);
     },

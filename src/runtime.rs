@@ -43,6 +43,7 @@ pub enum UiCommand {
     HotReloadScript { script: String },
     PlayAudio { id: String, url: String },
     StopAudio { id: String },
+    ShutdownServers,
 }
 
 pub struct JsRuntime {
@@ -236,6 +237,11 @@ impl JsRuntime {
                     text_eviction_threshold: text_threshold,
                     texture_eviction_threshold: texture_threshold,
                 });
+            })).unwrap();
+
+            let tx_shutdown = tx.clone();
+            globals.set("_native_shutdown_servers", Function::new(ctx.clone(), move || {
+                let _ = tx_shutdown.send(UiCommand::ShutdownServers);
             })).unwrap();
 
             globals.set("_native_get_metadata", Function::new(ctx.clone(), || {
