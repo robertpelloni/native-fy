@@ -360,6 +360,10 @@ impl RenderState {
     }
 
     pub fn capture_frame(&self, texture: &wgpu::Texture, path: String) {
+        if !texture.usage().contains(wgpu::TextureUsages::COPY_SRC) {
+            println!("Frame Capture: Surface texture lacks COPY_SRC capability in this environment; skipping capture to {}", path);
+            return;
+        }
         let size = self.size;
         let u32_size = std::mem::size_of::<u32>() as u32;
         let align = 256;
